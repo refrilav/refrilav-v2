@@ -15,10 +15,10 @@ for (let h = 7; h <= 19; h++) {
 }
 
 const STATUS_CORES = {
-  agendado:    { bg: 'bg-blue-100',  text: 'text-blue-800',  border: 'border-blue-300' },
-  em_andamento:{ bg: 'bg-yellow-100',text: 'text-yellow-800',border: 'border-yellow-300' },
-  concluido:   { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-300' },
-  cancelado:   { bg: 'bg-gray-100',  text: 'text-gray-500',  border: 'border-gray-200' },
+  agendado:    { bg: 'bg-blue-100',   text: 'text-blue-800',   border: 'border-blue-300' },
+  em_andamento:{ bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-300' },
+  concluido:   { bg: 'bg-green-100',  text: 'text-green-800',  border: 'border-green-300' },
+  cancelado:   { bg: 'bg-gray-100',   text: 'text-gray-500',   border: 'border-gray-200' },
 }
 
 function hoje() {

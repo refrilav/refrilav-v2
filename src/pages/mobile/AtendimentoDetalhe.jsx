@@ -8,10 +8,10 @@ import MobileHeader from '../../components/ui/MobileHeader'
 import { supabase } from '../../lib/supabase'
 
 const STATUS_INFO = {
-  agendado:     { label: 'Agendado',      bg: 'bg-blue-100',   text: 'text-blue-800',  dot: 'bg-blue-500' },
-  em_andamento: { label: 'Em andamento',  bg: 'bg-yellow-100', text: 'text-yellow-800',dot: 'bg-yellow-500' },
-  concluido:    { label: 'Concluído',     bg: 'bg-green-100',  text: 'text-green-800', dot: 'bg-green-500' },
-  cancelado:    { label: 'Cancelado',     bg: 'bg-gray-100',   text: 'text-gray-500',  dot: 'bg-gray-400' },
+  agendado:     { label: 'Agendado',      bg: 'bg-blue-100',   text: 'text-blue-800',   dot: 'bg-blue-500' },
+  em_andamento: { label: 'Em andamento',  bg: 'bg-orange-100', text: 'text-orange-700', dot: 'bg-orange-500' },
+  concluido:    { label: 'Concluído',     bg: 'bg-green-100',  text: 'text-green-800',  dot: 'bg-green-500' },
+  cancelado:    { label: 'Cancelado',     bg: 'bg-gray-100',   text: 'text-gray-500',   dot: 'bg-gray-400' },
 }
 
 function fmt(valor) {
