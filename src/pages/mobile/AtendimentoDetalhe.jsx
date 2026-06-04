@@ -522,13 +522,23 @@ export default function AtendimentoDetalhe() {
       {/* CTA fixo no bottom */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 safe-bottom">
         {servico.status === 'agendado' && (
-          <button
-            onClick={iniciarAtendimento}
-            disabled={salvando}
-            className="w-full bg-primary text-white rounded-2xl py-4 font-bold text-base disabled:opacity-60 active:scale-[0.98] transition shadow-lg"
-          >
-            {salvando ? 'Atualizando...' : '▶  Iniciar Atendimento'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={iniciarAtendimento}
+              disabled={salvando}
+              className="flex-1 bg-navy text-white rounded-2xl py-4 font-bold text-sm disabled:opacity-60 active:scale-[0.98] transition shadow-lg"
+            >
+              {salvando ? '...' : '▶ Iniciar'}
+            </button>
+            <button
+              onClick={concluirAtendimento}
+              disabled={salvando}
+              className="flex-1 bg-green-600 text-white rounded-2xl py-4 font-bold text-sm disabled:opacity-60 active:scale-[0.98] transition shadow-lg flex items-center justify-center gap-1"
+            >
+              <CheckCircle size={18} />
+              {salvando ? '...' : 'Concluir'}
+            </button>
+          </div>
         )}
         {servico.status === 'em_andamento' && (
           <button
@@ -543,7 +553,7 @@ export default function AtendimentoDetalhe() {
         {servico.status === 'concluido' && (
           <div className="w-full bg-green-50 text-green-700 rounded-2xl py-4 font-semibold text-sm text-center flex items-center justify-center gap-2">
             <CheckCircle size={18} />
-            Atendimento concluído em {fmtData(servico.finished_at)}
+            Concluído em {fmtData(servico.finished_at)}
           </div>
         )}
       </div>
