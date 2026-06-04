@@ -164,8 +164,16 @@ export default function Agenda() {
       {/* Grade horária */}
       <div className="flex-1 overflow-y-auto">
         {HORARIOS.map(h => {
-          // Serviços que começam neste slot
-          const items = servicos.filter(s => getHHMM(s.scheduled_at) === h)
+          // Mostra atendimentos cujo horário cai dentro deste slot de 30min
+          const [sh, sm] = h.split(':').map(Number)
+          const slotMin = sh * 60 + sm
+          const items = servicos.filter(s => {
+            const hhmm = getHHMM(s.scheduled_at)
+            if (!hhmm) return false
+            const [ah, am] = hhmm.split(':').map(Number)
+            const atMin = ah * 60 + am
+            return atMin >= slotMin && atMin < slotMin + 30
+          })
           const isHH = h.endsWith(':00')
           // Distribui em colunas se houver mais de um
           const colunas = distribuirEmColunas(items)
