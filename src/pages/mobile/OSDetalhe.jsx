@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
-  ChevronLeft, Edit2, Plus, Trash2, Save,
-  CheckCircle, Package, FileText, ChevronRight
+  Edit2, Plus, Trash2, Save, CheckCircle, FileText
 } from 'lucide-react'
+import MobileHeader from '../../components/ui/MobileHeader'
 import { supabase } from '../../lib/supabase'
 
 const ETAPAS = [
@@ -176,27 +176,16 @@ export default function OSDetalhe() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-32">
-      {/* Header */}
-      <div className="bg-navy text-white px-4 pt-12 pb-5 safe-top">
-        <div className="flex items-center gap-3 mb-3">
-          <button onClick={() => navigate(-1)} className="p-1 -ml-1">
-            <ChevronLeft size={24} />
-          </button>
-          <span className="text-sm text-blue-200">Oficina</span>
-        </div>
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-xl font-bold">{cliente.name || '—'}</h1>
-            <p className="text-blue-200 text-sm mt-0.5">
-              {[os.equipment, os.brand, os.model].filter(Boolean).join(' · ')}
-            </p>
-          </div>
+      <MobileHeader
+        titulo={cliente.name || '—'}
+        subtitulo={[os.equipment, os.brand, os.model].filter(Boolean).join(' · ')}
+        status={
           <span className={`${etapaAtual.cor} text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5`}>
             <span className={`w-1.5 h-1.5 rounded-full ${etapaAtual.dot}`} />
             {etapaAtual.label}
           </span>
-        </div>
-      </div>
+        }
+      />
 
       {/* Barra de progresso das etapas */}
       <div className="bg-white border-b border-gray-100 px-4 py-3">
@@ -413,7 +402,10 @@ export default function OSDetalhe() {
         </div>
 
         {/* Botão recibo */}
-        <button className="w-full border border-gray-200 bg-white text-gray-700 rounded-2xl py-4 font-semibold text-sm flex items-center justify-center gap-2">
+        <button
+          className="w-full border border-gray-200 bg-white text-gray-700 rounded-2xl py-4 font-semibold text-sm flex items-center justify-center gap-2"
+          onClick={() => window.open(`/recibo/${id}`, '_blank')}
+        >
           <FileText size={18} />
           Ver Recibo
         </button>

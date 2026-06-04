@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
-  ChevronLeft, Phone, MapPin, Clock, Wrench, Package,
-  CheckCircle, AlertCircle, Edit2, Plus, Trash2, Save,
-  FileText, AlertTriangle
+  Phone, MapPin, Clock, Wrench, Package,
+  CheckCircle, Edit2, Plus, Trash2, Save, FileText
 } from 'lucide-react'
+import MobileHeader from '../../components/ui/MobileHeader'
 import { supabase } from '../../lib/supabase'
 
 const STATUS_INFO = {
@@ -186,27 +186,16 @@ export default function AtendimentoDetalhe() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-32">
-      {/* Header */}
-      <div className="bg-navy text-white px-4 pt-12 pb-5 safe-top">
-        <div className="flex items-center gap-3 mb-3">
-          <button onClick={() => navigate(-1)} className="p-1 -ml-1 rounded-full">
-            <ChevronLeft size={24} />
-          </button>
-          <span className="text-sm text-blue-200">Atendimento</span>
-        </div>
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-xl font-bold">{cliente.name || '—'}</h1>
-            <p className="text-blue-200 text-sm mt-0.5">
-              {[servico.equipment, servico.brand, servico.model].filter(Boolean).join(' · ')}
-            </p>
-          </div>
+      <MobileHeader
+        titulo={cliente.name || '—'}
+        subtitulo={[servico.equipment, servico.brand, servico.model].filter(Boolean).join(' · ')}
+        status={
           <span className={`${status.bg} ${status.text} text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5`}>
             <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
             {status.label}
           </span>
-        </div>
-      </div>
+        }
+      />
 
       <div className="px-4 space-y-3 mt-4">
 
@@ -464,7 +453,7 @@ export default function AtendimentoDetalhe() {
         {/* Botão Recibo */}
         <button
           className="w-full border border-gray-200 bg-white text-gray-700 rounded-2xl py-4 font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition"
-          onClick={() => alert('Recibo será implementado em breve.')}
+          onClick={() => window.open(`/recibo/${id}`, '_blank')}
         >
           <FileText size={18} />
           Ver Recibo

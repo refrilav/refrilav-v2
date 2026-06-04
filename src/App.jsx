@@ -10,6 +10,7 @@ import Oficina from './pages/Oficina'
 import AtendimentoDetalhe from './pages/mobile/AtendimentoDetalhe'
 import OSDetalhe from './pages/mobile/OSDetalhe'
 import RecolherEquipamento from './pages/mobile/RecolherEquipamento'
+import Recibo from './pages/publicas/Recibo'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -38,6 +39,8 @@ function AppRoutes() {
       <Route path="/m/atendimento/:id" element={<PrivateRoute><AtendimentoDetalhe /></PrivateRoute>} />
       <Route path="/m/oficina/:id" element={<PrivateRoute><OSDetalhe /></PrivateRoute>} />
       <Route path="/m/recolher/:id" element={<PrivateRoute><RecolherEquipamento /></PrivateRoute>} />
+      {/* Rota pública — sem login */}
+      <Route path="/recibo/:token" element={<Recibo />} />
     </Routes>
   )
 }

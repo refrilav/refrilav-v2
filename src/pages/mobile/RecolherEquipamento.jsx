@@ -1,7 +1,8 @@
 import { useRef, useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ChevronLeft, RotateCcw, Check, ChevronRight } from 'lucide-react'
+import { RotateCcw, Check, ChevronRight } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import MobileHeader from '../../components/ui/MobileHeader'
 
 export default function RecolherEquipamento() {
   const { id } = useParams()
@@ -138,17 +139,10 @@ export default function RecolherEquipamento() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <div className="bg-navy text-white px-4 pt-12 pb-5 safe-top flex-shrink-0">
-        <div className="flex items-center gap-3 mb-3">
-          <button onClick={() => navigate(-1)} className="p-1 -ml-1">
-            <ChevronLeft size={24} />
-          </button>
-          <span className="text-sm text-blue-200">Recolher Equipamento</span>
-        </div>
-        <h1 className="text-lg font-bold">{cliente.name || '—'}</h1>
-        <p className="text-blue-200 text-sm mt-0.5">{equip || '—'}</p>
-      </div>
+      <MobileHeader
+        titulo={cliente.name || '—'}
+        subtitulo={equip || '—'}
+      />
 
       <div className="flex-1 px-4 py-5 space-y-4">
         {/* Termo */}
