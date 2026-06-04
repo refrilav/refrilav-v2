@@ -1,7 +1,7 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import {
-  LayoutDashboard, Calendar, ClipboardList, Users,
+  LayoutDashboard, Calendar, ClipboardList, Users, Wrench,
   LogOut, Settings, ChevronLeft, ChevronRight, Bell
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react'
 const navItems = [
   { path: '/agenda', label: 'Agenda', icon: Calendar },
   { path: '/atendimentos', label: 'Atendimentos', icon: ClipboardList },
+  { path: '/oficina', label: 'Oficina', icon: Wrench },
   { path: '/clientes', label: 'Clientes', icon: Users },
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
 ]

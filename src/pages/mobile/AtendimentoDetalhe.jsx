@@ -454,7 +454,7 @@ export default function AtendimentoDetalhe() {
         {podeEditar && (
           <button
             className="w-full bg-navy/10 text-navy rounded-2xl py-4 font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition"
-            onClick={() => alert('Funcionalidade de recolher equipamento será implementada em breve.')}
+            onClick={() => navigate(`/m/recolher/${id}`)}
           >
             <Package size={18} />
             Recolher Equipamento

@@ -6,7 +6,10 @@ import Dashboard from './pages/Dashboard'
 import Agenda from './pages/Agenda'
 import Atendimentos from './pages/Atendimentos'
 import Clientes from './pages/Clientes'
+import Oficina from './pages/Oficina'
 import AtendimentoDetalhe from './pages/mobile/AtendimentoDetalhe'
+import OSDetalhe from './pages/mobile/OSDetalhe'
+import RecolherEquipamento from './pages/mobile/RecolherEquipamento'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -23,17 +26,18 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<Login />} />
 
-      {/* Rotas protegidas com layout */}
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route index element={<Navigate to="/agenda" replace />} />
         <Route path="agenda" element={<Agenda />} />
         <Route path="atendimentos" element={<Atendimentos />} />
+        <Route path="oficina" element={<Oficina />} />
         <Route path="clientes" element={<Clientes />} />
         <Route path="dashboard" element={<Dashboard />} />
       </Route>
 
-      {/* Detalhe mobile do atendimento (tela cheia, sem sidebar) */}
       <Route path="/m/atendimento/:id" element={<PrivateRoute><AtendimentoDetalhe /></PrivateRoute>} />
+      <Route path="/m/oficina/:id" element={<PrivateRoute><OSDetalhe /></PrivateRoute>} />
+      <Route path="/m/recolher/:id" element={<PrivateRoute><RecolherEquipamento /></PrivateRoute>} />
     </Routes>
   )
 }
