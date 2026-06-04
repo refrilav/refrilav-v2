@@ -30,6 +30,29 @@ function fmtData(str) {
   return `${d}/${m}/${y}`
 }
 
+function TotalDiretoInput({ onSalvar, onCancelar }) {
+  const [valor, setValor] = useState('')
+  return (
+    <div className="flex gap-2">
+      <input
+        type="number"
+        value={valor}
+        onChange={e => setValor(e.target.value)}
+        className="flex-1 border-2 border-primary/30 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"
+        step="0.01"
+        placeholder="Ex: 150,00"
+      />
+      <button
+        onClick={() => valor && onSalvar(valor)}
+        disabled={!valor}
+        className="bg-navy text-white rounded-xl px-3 py-2.5 text-sm font-semibold disabled:opacity-40"
+      >
+        Salvar total
+      </button>
+    </div>
+  )
+}
+
 export default function AtendimentoDetalhe() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -96,8 +119,18 @@ export default function AtendimentoDetalhe() {
     const val = parseFloat(String(moOrHand).replace(',', '.')) || 0
     const totalPecas = pecas.reduce((s, p) => s + (p.quantity * p.unit_price), 0)
     await supabase.from('services').update({
-      labor_price: val,
-      total_price: val + totalPecas
+      labor_price: val || null,
+      total_price: totalPecas > 0 || val > 0 ? val + totalPecas : null,
+    }).eq('id', id)
+    setEditandoMao(false)
+    buscar()
+  }
+
+  async function salvarTotalDireto(valor) {
+    const val = parseFloat(String(valor).replace(',', '.')) || 0
+    await supabase.from('services').update({
+      labor_price: null,
+      total_price: val,
     }).eq('id', id)
     setEditandoMao(false)
     buscar()
@@ -398,7 +431,7 @@ export default function AtendimentoDetalhe() {
           </div>
         </div>
 
-        {/* Mão de obra e total */}
+        {/* Valores */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Valores</span>
@@ -408,36 +441,60 @@ export default function AtendimentoDetalhe() {
               </button>
             )}
           </div>
-          <div className="divide-y divide-gray-50">
-            <div className="flex justify-between items-center px-4 py-3">
-              <span className="text-sm text-gray-600">Peças</span>
-              <span className="text-sm font-medium text-gray-900">{fmt(totalPecas)}</span>
-            </div>
-            <div className="flex justify-between items-center px-4 py-3">
-              <span className="text-sm text-gray-600">Mão de obra</span>
-              {editandoMao ? (
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    value={moOrHand}
-                    onChange={e => setMaoDeObra(e.target.value)}
-                    className="w-28 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-right focus:outline-none focus:border-primary"
-                    step="0.01"
-                    autoFocus
-                  />
-                  <button onClick={salvarMaoDeObra} className="bg-primary text-white rounded-lg px-2 py-1.5">
-                    <Save size={14} />
-                  </button>
+
+          {editandoMao ? (
+            <div className="px-4 py-4 space-y-3">
+              <p className="text-xs text-gray-400">Preencha <strong>mão de obra</strong> para discriminar no recibo, ou pule para o <strong>total direto</strong>:</p>
+
+              {totalPecas > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Peças</span>
+                  <span className="font-medium">{fmt(totalPecas)}</span>
                 </div>
-              ) : (
-                <span className="text-sm font-medium text-gray-900">{fmt(servico.labor_price)}</span>
               )}
+
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Mão de obra (opcional)</label>
+                <input
+                  type="number"
+                  value={moOrHand}
+                  onChange={e => setMaoDeObra(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"
+                  step="0.01"
+                  placeholder="0,00"
+                />
+              </div>
+
+              <div className="border-t border-dashed border-gray-200 pt-3">
+                <label className="text-xs text-gray-500 mb-1 block">Ou preencha só o total (sem discriminar)</label>
+                <TotalDiretoInput onSalvar={salvarTotalDireto} onCancelar={() => setEditandoMao(false)} />
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button onClick={salvarMaoDeObra} className="flex-1 bg-primary text-white rounded-xl py-2.5 text-sm font-semibold">Salvar mão de obra</button>
+                <button onClick={() => setEditandoMao(false)} className="px-4 bg-gray-100 text-gray-600 rounded-xl py-2.5 text-sm">Cancelar</button>
+              </div>
             </div>
-            <div className="flex justify-between items-center px-4 py-3.5 bg-gray-50">
-              <span className="text-sm font-bold text-gray-900">Total</span>
-              <span className="text-base font-bold text-navy">{fmt(servico.total_price || totalGeral)}</span>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {totalPecas > 0 && (
+                <div className="flex justify-between items-center px-4 py-3">
+                  <span className="text-sm text-gray-600">Peças</span>
+                  <span className="text-sm font-medium text-gray-900">{fmt(totalPecas)}</span>
+                </div>
+              )}
+              {servico.labor_price > 0 && (
+                <div className="flex justify-between items-center px-4 py-3">
+                  <span className="text-sm text-gray-600">Mão de obra</span>
+                  <span className="text-sm font-medium text-gray-900">{fmt(servico.labor_price)}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center px-4 py-3.5 bg-gray-50">
+                <span className="text-sm font-bold text-gray-900">Total</span>
+                <span className="text-base font-bold text-navy">{fmt(servico.total_price || totalGeral)}</span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Botão Recolher equipamento */}
