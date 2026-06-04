@@ -11,10 +11,11 @@ const FILTROS = [
 ]
 
 const STATUS_INFO = {
-  agendado:     { label: 'Agendado',     bg: 'bg-blue-100',   text: 'text-blue-700' },
-  em_andamento: { label: 'Em andamento', bg: 'bg-yellow-100', text: 'text-yellow-700' },
-  concluido:    { label: 'Concluído',    bg: 'bg-green-100',  text: 'text-green-700' },
-  cancelado:    { label: 'Cancelado',    bg: 'bg-gray-100',   text: 'text-gray-500' },
+  agendado:     { label: 'Agendado',     bg: 'bg-blue-100',   text: 'text-blue-700'   },
+  em_andamento: { label: 'Em andamento', bg: 'bg-orange-100', text: 'text-orange-700' },
+  concluido:    { label: 'Concluído',    bg: 'bg-green-100',  text: 'text-green-700'  },
+  recolhido:    { label: 'Recolhido',    bg: 'bg-purple-100', text: 'text-purple-700' },
+  cancelado:    { label: 'Cancelado',    bg: 'bg-gray-100',   text: 'text-gray-500'   },
 }
 
 function fmtData(str) {

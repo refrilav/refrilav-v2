@@ -61,10 +61,21 @@ export default function AtendimentoDetalhe() {
   async function excluir() {
     if (!window.confirm('Excluir este atendimento? Esta ação não pode ser desfeita.')) return
     setSalvando(true)
-    await supabase.from('service_parts').delete().eq('service_id', id)
-    await supabase.from('services').delete().eq('id', id)
+    try {
+      // Remove vínculos antes de apagar o atendimento
+      await supabase.from('service_parts').delete().eq('service_id', id)
+      await supabase.from('service_photos').delete().eq('service_id', id)
+      await supabase.from('receivables').delete().eq('service_id', id)
+      await supabase.from('reviews').delete().eq('service_id', id)
+      // Se tiver OS na oficina, desvincula
+      await supabase.from('workshop_orders').update({ service_id: null }).eq('service_id', id)
+      // Apaga o atendimento
+      await supabase.from('services').delete().eq('id', id)
+      navigate('/atendimentos')
+    } catch (e) {
+      alert('Erro ao excluir: ' + e.message)
+    }
     setSalvando(false)
-    navigate('/atendimentos')
   }
 
   async function iniciar() {
