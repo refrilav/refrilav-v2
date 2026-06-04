@@ -189,6 +189,7 @@ export default function AtendimentoDetalhe() {
       <MobileHeader
         titulo={cliente.name || '—'}
         subtitulo={[servico.equipment, servico.brand, servico.model].filter(Boolean).join(' · ')}
+        voltarPara="/atendimentos"
         status={
           <span className={`${status.bg} ${status.text} text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5`}>
             <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />

@@ -28,7 +28,6 @@ export default function Recibo() {
 
   useEffect(() => {
     async function buscar() {
-      // Busca por ID direto (token = id do serviço ou OS)
       let servico = null
       let tipo = null
 
@@ -88,136 +87,175 @@ export default function Recibo() {
   const cliente = dados.clients || {}
   const equip = [dados.equipment, dados.brand, dados.model].filter(Boolean).join(' ')
   const totalPecas = pecas.reduce((s, p) => s + (p.quantity * p.unit_price), 0)
-  const totalGeral = dados.total_price || (totalPecas + parseFloat(dados.labor_price || 0))
+  const maoDeObra = parseFloat(dados.labor_price || 0)
+  const totalGeral = parseFloat(dados.total_price || 0) || (totalPecas + maoDeObra)
   const dataServico = dados.finished_at || dados.scheduled_at || dados.created_at
+
+  // Lógica: mostrar discriminado só se tiver peças OU mão de obra preenchidos
+  const temDiscriminado = totalPecas > 0 || maoDeObra > 0
+  // Se só tem total_price sem peças e sem mão de obra → mostra só o total
+  const mostrarSomenteTotal = !temDiscriminado && totalGeral > 0
+
   const nomeEmpresa = empresa.company_name || 'Refrilav Assistência Técnica'
   const telefoneEmpresa = empresa.phone || ''
   const enderecoEmpresa = empresa.address || ''
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6 px-4">
-      <div className="max-w-md mx-auto">
-        {/* Cabeçalho da empresa */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm mb-4 text-center">
-          <div className="w-14 h-14 bg-red-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
-            <span className="text-white font-bold text-xl">R</span>
-          </div>
-          <h1 className="text-lg font-bold text-gray-900">{nomeEmpresa}</h1>
-          {telefoneEmpresa && <p className="text-sm text-gray-500 mt-0.5">{telefoneEmpresa}</p>}
-          {enderecoEmpresa && <p className="text-xs text-gray-400 mt-0.5">{enderecoEmpresa}</p>}
+    <>
+      {/* Estilos de impressão */}
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          body { background: white !important; }
+          .print-card { box-shadow: none !important; border: 1px solid #eee; }
+        }
+      `}</style>
 
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Recibo de Serviço</span>
-            <p className="text-sm text-gray-600 mt-1">{fmtData(dataServico)} {fmtHora(dataServico)}</p>
-          </div>
-        </div>
+      <div className="min-h-screen bg-gray-50 py-6 px-4">
+        <div className="max-w-md mx-auto">
 
-        {/* Dados do cliente */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm mb-4">
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Cliente</h2>
-          <div className="space-y-1.5">
-            <p className="text-sm font-semibold text-gray-900">{cliente.name || '—'}</p>
-            {cliente.cpf && <p className="text-xs text-gray-500">CPF: {cliente.cpf}</p>}
-            {cliente.phone && <p className="text-xs text-gray-500">{cliente.phone}</p>}
-            {(cliente.address || cliente.neighborhood) && (
-              <p className="text-xs text-gray-500">
-                {[cliente.address, cliente.neighborhood, cliente.city].filter(Boolean).join(', ')}
-              </p>
-            )}
-          </div>
-        </div>
+          {/* Botão imprimir */}
+          <button
+            onClick={() => window.print()}
+            className="no-print w-full bg-navy text-white rounded-2xl py-3.5 font-semibold text-sm mb-4 flex items-center justify-center gap-2"
+          >
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            Imprimir / Salvar PDF
+          </button>
 
-        {/* Serviço */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm mb-4">
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Serviço</h2>
-          <div className="space-y-2">
-            {equip && (
-              <div className="flex justify-between">
-                <span className="text-xs text-gray-500">Equipamento</span>
-                <span className="text-xs font-medium text-gray-900">{equip}</span>
-              </div>
-            )}
-            {dados.type && (
-              <div className="flex justify-between">
-                <span className="text-xs text-gray-500">Tipo</span>
-                <span className="text-xs font-medium text-gray-900">{dados.type}</span>
-              </div>
-            )}
-            {dados.diagnosis && (
-              <div className="pt-2 border-t border-gray-50">
-                <p className="text-xs text-gray-500 mb-1">Diagnóstico</p>
-                <p className="text-xs text-gray-700 leading-relaxed">{dados.diagnosis}</p>
-              </div>
-            )}
-            {dados.work_done && (
-              <div className="pt-2 border-t border-gray-50">
-                <p className="text-xs text-gray-500 mb-1">Trabalho realizado</p>
-                <p className="text-xs text-gray-700 leading-relaxed">{dados.work_done}</p>
-              </div>
-            )}
+          {/* Cabeçalho empresa */}
+          <div className="print-card bg-white rounded-2xl p-6 shadow-sm mb-4 text-center">
+            <div className="w-14 h-14 bg-red-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <span className="text-white font-bold text-xl">R</span>
+            </div>
+            <h1 className="text-lg font-bold text-gray-900">{nomeEmpresa}</h1>
+            {telefoneEmpresa && <p className="text-sm text-gray-500 mt-0.5">{telefoneEmpresa}</p>}
+            {enderecoEmpresa && <p className="text-xs text-gray-400 mt-0.5">{enderecoEmpresa}</p>}
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Recibo de Serviço</span>
+              <p className="text-sm text-gray-600 mt-1">{fmtData(dataServico)} {fmtHora(dataServico)}</p>
+            </div>
           </div>
-        </div>
 
-        {/* Peças */}
-        {pecas.length > 0 && (
-          <div className="bg-white rounded-2xl p-5 shadow-sm mb-4">
-            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Peças</h2>
+          {/* Cliente */}
+          <div className="print-card bg-white rounded-2xl p-5 shadow-sm mb-4">
+            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Cliente</h2>
+            <div className="space-y-1.5">
+              <p className="text-sm font-semibold text-gray-900">{cliente.name || '—'}</p>
+              {cliente.cpf && <p className="text-xs text-gray-500">CPF: {cliente.cpf}</p>}
+              {cliente.phone && <p className="text-xs text-gray-500">{cliente.phone}</p>}
+              {(cliente.address || cliente.neighborhood) && (
+                <p className="text-xs text-gray-500">
+                  {[cliente.address, cliente.neighborhood, cliente.city].filter(Boolean).join(', ')}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Serviço */}
+          <div className="print-card bg-white rounded-2xl p-5 shadow-sm mb-4">
+            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Serviço</h2>
             <div className="space-y-2">
-              {pecas.map((p, i) => (
-                <div key={i} className="flex justify-between items-center">
-                  <div>
-                    <p className="text-xs font-medium text-gray-900">{p.description}</p>
-                    <p className="text-xs text-gray-400">{p.quantity}x · {fmt(p.unit_price)}</p>
-                  </div>
-                  <span className="text-xs font-semibold text-gray-900">{fmt(p.quantity * p.unit_price)}</span>
+              {equip && (
+                <div className="flex justify-between">
+                  <span className="text-xs text-gray-500">Equipamento</span>
+                  <span className="text-xs font-medium text-gray-900">{equip}</span>
                 </div>
-              ))}
+              )}
+              {dados.type && (
+                <div className="flex justify-between">
+                  <span className="text-xs text-gray-500">Tipo</span>
+                  <span className="text-xs font-medium text-gray-900">{dados.type}</span>
+                </div>
+              )}
+              {dados.diagnosis && (
+                <div className="pt-2 border-t border-gray-50">
+                  <p className="text-xs text-gray-500 mb-1">Diagnóstico</p>
+                  <p className="text-xs text-gray-700 leading-relaxed">{dados.diagnosis}</p>
+                </div>
+              )}
+              {dados.work_done && (
+                <div className="pt-2 border-t border-gray-50">
+                  <p className="text-xs text-gray-500 mb-1">Trabalho realizado</p>
+                  <p className="text-xs text-gray-700 leading-relaxed">{dados.work_done}</p>
+                </div>
+              )}
             </div>
           </div>
-        )}
 
-        {/* Total */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm mb-4">
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Valores</h2>
-          <div className="space-y-2">
-            {totalPecas > 0 && (
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Peças</span>
-                <span className="text-sm text-gray-900">{fmt(totalPecas)}</span>
+          {/* Peças — só mostra se tiver */}
+          {pecas.length > 0 && (
+            <div className="print-card bg-white rounded-2xl p-5 shadow-sm mb-4">
+              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Peças</h2>
+              <div className="space-y-2">
+                {pecas.map((p, i) => (
+                  <div key={i} className="flex justify-between items-center">
+                    <div>
+                      <p className="text-xs font-medium text-gray-900">{p.description}</p>
+                      <p className="text-xs text-gray-400">{p.quantity}x · {fmt(p.unit_price)}</p>
+                    </div>
+                    <span className="text-xs font-semibold text-gray-900">{fmt(p.quantity * p.unit_price)}</span>
+                  </div>
+                ))}
               </div>
-            )}
-            {dados.labor_price > 0 && (
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Mão de obra</span>
-                <span className="text-sm text-gray-900">{fmt(dados.labor_price)}</span>
-              </div>
-            )}
-            <div className="flex justify-between pt-3 border-t border-gray-100">
-              <span className="text-base font-bold text-gray-900">Total</span>
-              <span className="text-base font-bold text-red-600">{fmt(totalGeral)}</span>
             </div>
+          )}
+
+          {/* Valores */}
+          <div className="print-card bg-white rounded-2xl p-5 shadow-sm mb-4">
+            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Valor</h2>
+
+            {mostrarSomenteTotal ? (
+              /* Só total, sem discriminar */
+              <div className="flex justify-between items-center py-2">
+                <span className="text-base font-bold text-gray-900">Total</span>
+                <span className="text-base font-bold text-red-600">{fmt(totalGeral)}</span>
+              </div>
+            ) : (
+              /* Discriminado: peças + mão de obra + total */
+              <div className="space-y-2">
+                {totalPecas > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Peças</span>
+                    <span className="text-sm text-gray-900">{fmt(totalPecas)}</span>
+                  </div>
+                )}
+                {maoDeObra > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Mão de obra</span>
+                    <span className="text-sm text-gray-900">{fmt(maoDeObra)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between pt-3 border-t border-gray-100">
+                  <span className="text-base font-bold text-gray-900">Total</span>
+                  <span className="text-base font-bold text-red-600">{fmt(totalGeral)}</span>
+                </div>
+              </div>
+            )}
+
             {dados.payment_method && (
-              <p className="text-xs text-gray-400 text-right">{dados.payment_method}</p>
+              <p className="text-xs text-gray-400 text-right mt-1">{dados.payment_method}</p>
             )}
           </div>
+
+          {/* Assinatura se houver */}
+          {dados.auth_signature && (
+            <div className="print-card bg-white rounded-2xl p-5 shadow-sm mb-4">
+              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Assinatura</h2>
+              <img src={dados.auth_signature} alt="Assinatura" className="w-full h-20 object-contain" />
+              {dados.auth_signer_name && (
+                <p className="text-xs text-gray-400 text-center mt-1">{dados.auth_signer_name}</p>
+              )}
+            </div>
+          )}
+
+          <p className="text-center text-xs text-gray-300 mt-4 mb-8">
+            {nomeEmpresa} · {fmtData(dataServico)}
+          </p>
         </div>
-
-        {/* Assinatura se houver */}
-        {dados.auth_signature && (
-          <div className="bg-white rounded-2xl p-5 shadow-sm mb-4">
-            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Assinatura</h2>
-            <img src={dados.auth_signature} alt="Assinatura" className="w-full h-20 object-contain" />
-            {dados.auth_signer_name && (
-              <p className="text-xs text-gray-400 text-center mt-1">{dados.auth_signer_name}</p>
-            )}
-          </div>
-        )}
-
-        {/* Rodapé */}
-        <p className="text-center text-xs text-gray-300 mt-4 mb-8">
-          {nomeEmpresa} · {fmtData(dataServico)}
-        </p>
       </div>
-    </div>
+    </>
   )
 }
