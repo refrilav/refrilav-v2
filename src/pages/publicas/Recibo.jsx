@@ -193,7 +193,7 @@ export default function Recibo() {
                 {pecas.map((p, i) => (
                   <div key={i} className="flex justify-between items-center">
                     <div>
-                      <p className="text-xs font-medium text-gray-900">{p.description}</p>
+                      <p className="text-xs font-medium text-gray-900">{p.name || p.description}</p>
                       <p className="text-xs text-gray-400">{p.quantity}x · {fmt(p.unit_price)}</p>
                     </div>
                     <span className="text-xs font-semibold text-gray-900">{fmt(p.quantity * p.unit_price)}</span>

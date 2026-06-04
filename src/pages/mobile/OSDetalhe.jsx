@@ -138,7 +138,7 @@ export default function OSDetalhe() {
     const preco = parseFloat(String(novaPeca.unit_price).replace(',', '.')) || 0
     await supabase.from('service_parts').insert({
       workshop_order_id: id,
-      description: novaPeca.description,
+      name: novaPeca.description,
       quantity: novaPeca.quantity,
       unit_price: preco,
     })
@@ -349,7 +349,7 @@ export default function OSDetalhe() {
             ) : pecas.map(p => (
               <div key={p.id} className="flex items-center justify-between px-4 py-3">
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-900 truncate">{p.description}</div>
+                  <div className="text-sm font-medium text-gray-900 truncate">{p.name || p.description}</div>
                   <div className="text-xs text-gray-400">{p.quantity}x · {fmt(p.unit_price)}</div>
                 </div>
                 <div className="flex items-center gap-3">

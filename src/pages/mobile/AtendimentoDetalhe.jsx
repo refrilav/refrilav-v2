@@ -148,7 +148,7 @@ export default function AtendimentoDetalhe() {
     // Insere a peça
     await supabase.from('service_parts').insert({
       service_id: id,
-      description: novaPeca.description,
+      name: novaPeca.description,
       quantity: novaPeca.quantity,
       unit_price: preco,
     })
@@ -353,7 +353,7 @@ export default function AtendimentoDetalhe() {
               : pecas.map(p=>(
                 <div key={p.id} className="flex items-center justify-between px-4 py-3">
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">{p.description}</div>
+                    <div className="text-sm font-medium truncate">{p.name || p.description}</div>
                     <div className="text-xs text-gray-400">{p.quantity}x · {fmt(p.unit_price)}</div>
                   </div>
                   <div className="flex items-center gap-3">
