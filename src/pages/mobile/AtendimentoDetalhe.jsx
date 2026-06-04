@@ -408,8 +408,23 @@ export default function AtendimentoDetalhe() {
         </div>
 
         {/* Orçamento */}
-        <button onClick={()=>window.open(`/orcamento/${id}`,'_blank')} className="w-full bg-blue-50 text-blue-700 rounded-2xl py-4 font-semibold text-sm flex items-center justify-center gap-2">
-          <FileText size={18}/> Ver Orçamento
+        <button onClick={async () => {
+          const now = new Date()
+          const nowStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}T${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
+          const { data, error } = await supabase.from('quotes').insert({
+            client_id: servico.client_id,
+            service_id: id,
+            equipment: servico.equipment,
+            brand: servico.brand,
+            model: servico.model,
+            problem: servico.problem,
+            status: 'pendente',
+            created_at: nowStr,
+          }).select().single()
+          if (error) return alert('Erro ao criar orçamento: ' + error.message)
+          navigate(`/m/orcamento/${data.id}`)
+        }} className="w-full bg-blue-50 text-blue-700 rounded-2xl py-4 font-semibold text-sm flex items-center justify-center gap-2">
+          <FileText size={18}/> Criar Orçamento
         </button>
 
         {/* Recolher */}

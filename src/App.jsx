@@ -7,8 +7,10 @@ import Agenda from './pages/Agenda'
 import Atendimentos from './pages/Atendimentos'
 import Clientes from './pages/Clientes'
 import Oficina from './pages/Oficina'
+import Orcamentos from './pages/Orcamentos'
 import AtendimentoDetalhe from './pages/mobile/AtendimentoDetalhe'
 import OSDetalhe from './pages/mobile/OSDetalhe'
+import OrcamentoDetalhe from './pages/mobile/OrcamentoDetalhe'
 import RecolherEquipamento from './pages/mobile/RecolherEquipamento'
 import Recibo from './pages/publicas/Recibo'
 import Orcamento from './pages/publicas/Orcamento'
@@ -33,12 +35,14 @@ function AppRoutes() {
         <Route path="agenda" element={<Agenda />} />
         <Route path="atendimentos" element={<Atendimentos />} />
         <Route path="oficina" element={<Oficina />} />
+        <Route path="orcamentos" element={<Orcamentos />} />
         <Route path="clientes" element={<Clientes />} />
         <Route path="dashboard" element={<Dashboard />} />
       </Route>
 
       <Route path="/m/atendimento/:id" element={<PrivateRoute><AtendimentoDetalhe /></PrivateRoute>} />
       <Route path="/m/oficina/:id" element={<PrivateRoute><OSDetalhe /></PrivateRoute>} />
+      <Route path="/m/orcamento/:id" element={<PrivateRoute><OrcamentoDetalhe /></PrivateRoute>} />
       <Route path="/m/recolher/:id" element={<PrivateRoute><RecolherEquipamento /></PrivateRoute>} />
       {/* Rota pública — sem login */}
       <Route path="/recibo/:token" element={<Recibo />} />
