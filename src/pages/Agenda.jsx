@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import ModalNovoAtendimento from '../components/ui/ModalNovoAtendimento'
 
@@ -15,10 +15,10 @@ for (let h = 7; h <= 19; h++) {
 }
 
 const STATUS_CORES = {
-  agendado:    { bg: 'bg-blue-100',   text: 'text-blue-800',   border: 'border-blue-300' },
-  em_andamento:{ bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-300' },
-  concluido:   { bg: 'bg-green-100',  text: 'text-green-800',  border: 'border-green-300' },
-  cancelado:   { bg: 'bg-gray-100',   text: 'text-gray-500',   border: 'border-gray-200' },
+  agendado:     { bg: 'bg-blue-100',   text: 'text-blue-800',   border: 'border-blue-300' },
+  em_andamento: { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-400' },
+  concluido:    { bg: 'bg-green-100',  text: 'text-green-800',  border: 'border-green-300' },
+  cancelado:    { bg: 'bg-gray-100',   text: 'text-gray-500',   border: 'border-gray-200' },
 }
 
 function hoje() {
@@ -52,9 +52,7 @@ export default function Agenda() {
   const [horarioPreSelecionado, setHorarioPreSelecionado] = useState(null)
   const todayStr = hoje()
 
-  useEffect(() => {
-    buscarServicos()
-  }, [dataSelecionada])
+  useEffect(() => { buscarServicos() }, [dataSelecionada])
 
   async function buscarServicos() {
     const dStr = dateStr(dataSelecionada)
@@ -74,13 +72,6 @@ export default function Agenda() {
     setSemana(semanaDeData(d))
   }
 
-  function mudarDia(delta) {
-    const d = new Date(dataSelecionada)
-    d.setDate(d.getDate() + delta)
-    setDataSelecionada(d)
-    setSemana(semanaDeData(d))
-  }
-
   function servicosNoHorario(horario) {
     return servicos.filter(s => {
       if (!s.scheduled_at) return false
@@ -95,15 +86,10 @@ export default function Agenda() {
 
   const dStr = dateStr(dataSelecionada)
   const isHoje = dStr === todayStr
-  const mesAtual = dataSelecionada.getMonth()
-  const mesAnterior = semana[0].getMonth()
-  const mesHeader = mesAnterior !== mesAtual
-    ? `${MESES_CURTO[mesAnterior]} | ${MESES[mesAtual]}`
-    : MESES[mesAtual]
 
   return (
     <div className="flex flex-col h-screen bg-white overflow-hidden">
-      {/* Cabeçalho semana — igual à imagem */}
+      {/* Cabeçalho semana */}
       <div className="bg-white border-b border-gray-100 flex-shrink-0">
         {/* Linha de meses */}
         <div className="flex text-xs text-gray-500 pt-3 pb-1 px-2">
@@ -127,19 +113,15 @@ export default function Agenda() {
             const isSelected = ds === dStr
             const isT = ds === todayStr
             return (
-              <button
-                key={i}
-                onClick={() => setDataSelecionada(d)}
-                className="flex flex-col items-center py-1 gap-0.5"
-              >
+              <button key={i} onClick={() => { setDataSelecionada(d); setSemana(semanaDeData(d)) }}
+                className="flex flex-col items-center py-1 gap-0.5">
                 <span className={`text-xs ${isT ? 'text-gray-500 font-medium' : 'text-gray-400'}`}>
                   {DIAS_SEMANA[i]}
                 </span>
                 <span className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition ${
                   isSelected && isT ? 'bg-primary text-white' :
                   isSelected ? 'bg-navy text-white' :
-                  isT ? 'text-primary font-bold' :
-                  'text-gray-800'
+                  isT ? 'text-primary font-bold' : 'text-gray-800'
                 }`}>
                   {d.getDate()}
                 </span>
@@ -161,29 +143,25 @@ export default function Agenda() {
           const items = servicosNoHorario(h)
           const isHH = h.endsWith(':00')
           return (
-            <div
-              key={h}
-              className={`flex border-b ${isHH ? 'border-gray-150' : 'border-gray-50'} min-h-[40px] relative`}
-              onClick={() => abrirModalNoSlot(`${dStr}T${h}`)}
-            >
-              {/* Hora */}
+            <div key={h}
+              className={`flex border-b ${isHH ? 'border-gray-150' : 'border-gray-50'} min-h-[40px]`}
+              onClick={() => abrirModalNoSlot(`${dStr}T${h}`)}>
               <div className="w-14 flex-shrink-0 flex items-start justify-end pr-2 pt-1">
                 <span className={`text-xs ${isHH ? 'text-gray-500' : 'text-gray-300'}`}>{h}</span>
               </div>
-              {/* Eventos */}
               <div className="flex-1 py-0.5 pr-2 space-y-0.5">
                 {items.map(s => {
                   const cores = STATUS_CORES[s.status] || STATUS_CORES.agendado
-                  const nomeCliente = s.clients?.name || 'Cliente'
-                  const equip = [s.equipment, s.brand, s.model].filter(Boolean).join(' ')
                   return (
-                    <div
-                      key={s.id}
+                    <div key={s.id}
                       onClick={e => { e.stopPropagation(); navigate(`/m/atendimento/${s.id}`) }}
-                      className={`${cores.bg} ${cores.text} border ${cores.border} rounded-lg px-2 py-1.5 text-xs font-medium cursor-pointer active:scale-[0.98] transition`}
-                    >
-                      <div className="font-semibold truncate">{nomeCliente}</div>
-                      {equip && <div className="truncate opacity-75 text-[11px]">{equip}</div>}
+                      className={`${cores.bg} ${cores.text} border ${cores.border} rounded-lg px-2 py-1.5 text-xs font-medium cursor-pointer active:scale-[0.98] transition`}>
+                      <div className="font-semibold truncate">{s.clients?.name || 'Cliente'}</div>
+                      {(s.equipment || s.brand) && (
+                        <div className="truncate opacity-75 text-[11px]">
+                          {[s.equipment, s.brand, s.model].filter(Boolean).join(' ')}
+                        </div>
+                      )}
                     </div>
                   )
                 })}
@@ -191,23 +169,19 @@ export default function Agenda() {
             </div>
           )
         })}
-        {/* Espaço para o FAB */}
         <div className="h-20" />
       </div>
 
-      {/* Botão Hoje (fixo, igual imagem) */}
+      {/* Botão Hoje */}
       {!isHoje && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40">
-          <button
-            onClick={irParaHoje}
-            className="bg-navy text-white px-5 py-2.5 rounded-full text-sm font-semibold shadow-lg"
-          >
+          <button onClick={irParaHoje} className="bg-navy text-white px-5 py-2.5 rounded-full text-sm font-semibold shadow-lg">
             Hoje
           </button>
         </div>
       )}
 
-      {/* FAB + (igual imagem) */}
+      {/* FAB + */}
       <button
         onClick={() => { setHorarioPreSelecionado(null); setModalAberto(true) }}
         className="fixed bottom-24 right-5 z-40 w-14 h-14 bg-primary rounded-full flex items-center justify-center shadow-xl active:scale-95 transition"
@@ -215,7 +189,6 @@ export default function Agenda() {
         <Plus size={26} color="white" strokeWidth={2.5} />
       </button>
 
-      {/* Modal novo atendimento */}
       {modalAberto && (
         <ModalNovoAtendimento
           dataHora={horarioPreSelecionado}
