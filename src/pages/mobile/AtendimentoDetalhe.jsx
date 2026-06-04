@@ -40,6 +40,7 @@ export default function AtendimentoDetalhe() {
   const [editHorario, setEditHorario] = useState(false)
   const [novoHorario, setNovoHorario] = useState('')
   const [novaDuracao, setNovaDuracao] = useState(60)
+  const [addPeca, setAddPeca] = useState(false)
   const [novaPeca, setNovaPeca] = useState({ description:'', quantity:1, unit_price:'' })
 
   useEffect(() => { carregar() }, [id])
