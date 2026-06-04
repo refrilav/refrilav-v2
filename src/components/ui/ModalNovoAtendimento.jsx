@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, Search, User, ChevronDown } from 'lucide-react'
+import { X, Search, User, ChevronDown, ChevronLeft } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
 const TIPOS = ['Instalação','Manutenção','Reparo','Limpeza','Visita Técnica','Orçamento']
@@ -66,14 +66,15 @@ export default function ModalNovoAtendimento({ dataHora, onClose, onSalvo }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
-      <div className="bg-white w-full rounded-t-2xl max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-white z-50 flex flex-col">
+      <div className="flex-1 overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100 sticky top-0 bg-white">
-          <h2 className="font-semibold text-navy text-base">Novo Atendimento</h2>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100">
-            <X size={20} className="text-gray-500" />
+        <div className="flex items-center justify-between px-4 pt-12 pb-4 border-b border-gray-100 sticky top-0 bg-white safe-top">
+          <button onClick={onClose} className="flex items-center gap-1 text-primary text-sm font-medium">
+            <ChevronLeft size={20} /> Voltar
           </button>
+          <h2 className="font-semibold text-navy text-base">Novo Atendimento</h2>
+          <div className="w-16" />
         </div>
 
         <div className="p-4 space-y-4">
@@ -194,7 +195,7 @@ export default function ModalNovoAtendimento({ dataHora, onClose, onSalvo }) {
           >
             {salvando ? 'Salvando...' : 'Agendar Atendimento'}
           </button>
-          <div className="h-2" />
+          <div className="h-8" />
         </div>
       </div>
     </div>
