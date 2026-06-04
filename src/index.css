@@ -5,6 +5,7 @@
 @layer base {
   * {
     -webkit-tap-highlight-color: transparent;
+    box-sizing: border-box;
   }
   body {
     @apply bg-gray-50 text-gray-900 font-sans;
@@ -18,7 +19,7 @@
 
 @layer utilities {
   .safe-bottom {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
   .safe-top {
     padding-top: env(safe-area-inset-top, 0px);
