@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, Calendar } from 'lucide-react'
 
-export default function MobileHeader({ titulo, subtitulo, status, voltarPara }) {
+export default function MobileHeader({ titulo, subtitulo, status, voltarPara, acoes }) {
   const navigate = useNavigate()
 
   return (
@@ -13,12 +13,15 @@ export default function MobileHeader({ titulo, subtitulo, status, voltarPara }) 
         >
           <ChevronLeft size={20} /> Voltar
         </button>
-        <button
-          onClick={() => navigate('/agenda')}
-          className="flex items-center gap-1.5 bg-white/10 text-white text-xs font-medium px-3 py-1.5 rounded-full"
-        >
-          <Calendar size={13} /> Agenda
-        </button>
+        <div className="flex items-center gap-2">
+          {acoes}
+          <button
+            onClick={() => navigate('/agenda')}
+            className="flex items-center gap-1.5 bg-white/10 text-white text-xs font-medium px-3 py-1.5 rounded-full"
+          >
+            <Calendar size={13} /> Agenda
+          </button>
+        </div>
       </div>
       <div className="flex items-start justify-between">
         <div>

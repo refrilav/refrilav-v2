@@ -58,6 +58,15 @@ export default function AtendimentoDetalhe() {
     setLoading(false)
   }
 
+  async function excluir() {
+    if (!window.confirm('Excluir este atendimento? Esta ação não pode ser desfeita.')) return
+    setSalvando(true)
+    await supabase.from('service_parts').delete().eq('service_id', id)
+    await supabase.from('services').delete().eq('id', id)
+    setSalvando(false)
+    navigate('/atendimentos')
+  }
+
   async function iniciar() {
     setSalvando(true)
     await supabase.from('services').update({ status: 'em_andamento' }).eq('id', id)
@@ -135,6 +144,14 @@ export default function AtendimentoDetalhe() {
         titulo={cli.name || '—'}
         subtitulo={[servico.equipment,servico.brand,servico.model].filter(Boolean).join(' · ')}
         voltarPara="/atendimentos"
+        acoes={
+          <button
+            onClick={excluir}
+            className="flex items-center justify-center w-8 h-8 bg-white/10 rounded-full"
+          >
+            <Trash2 size={15} className="text-red-300" />
+          </button>
+        }
         status={
           <span className={`${st.bg} ${st.text} text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5`}>
             <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`}/>
