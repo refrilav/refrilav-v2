@@ -37,7 +37,9 @@ export default function AtendimentoDetalhe() {
   const [editVal, setEditVal] = useState(false)
   const [mao, setMao] = useState('')
   const [totalDireto, setTotalDireto] = useState('')
-  const [addPeca, setAddPeca] = useState(false)
+  const [editHorario, setEditHorario] = useState(false)
+  const [novoHorario, setNovoHorario] = useState('')
+  const [novaDuracao, setNovaDuracao] = useState(60)
   const [novaPeca, setNovaPeca] = useState({ description:'', quantity:1, unit_price:'' })
 
   useEffect(() => { carregar() }, [id])
@@ -55,7 +57,21 @@ export default function AtendimentoDetalhe() {
     setDiag(s?.diagnosis || '')
     setTrab(s?.work_done || '')
     setMao(s?.labor_price || '')
+    setNovoHorario(s?.scheduled_at?.substring(0,16) || '')
     setLoading(false)
+  }
+
+  async function salvarHorario() {
+    if (!novoHorario) return
+    const [date, time] = novoHorario.split('T')
+    const [h, m] = time.split(':').map(Number)
+    const total = h * 60 + m + novaDuracao
+    const nh = Math.floor(total / 60) % 24
+    const nm = total % 60
+    const scheduled_end = `${date}T${String(nh).padStart(2,'0')}:${String(nm).padStart(2,'0')}`
+    await supabase.from('services').update({ scheduled_at: novoHorario, scheduled_end }).eq('id', id)
+    setEditHorario(false)
+    carregar()
   }
 
   async function excluir() {
@@ -197,11 +213,51 @@ export default function AtendimentoDetalhe() {
 
         {/* Serviço */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-50"><span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Serviço</span></div>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Serviço</span>
+            {podeEditar && !editHorario && (
+              <button onClick={() => setEditHorario(true)} className="p-1.5 rounded-lg bg-gray-100">
+                <Edit2 size={14} className="text-gray-500"/>
+              </button>
+            )}
+          </div>
           <div className="divide-y divide-gray-50">
-            <div className="flex items-center gap-3 px-4 py-3">
-              <Clock size={16} className="text-gray-400"/>
-              <div><div className="text-xs text-gray-400">Agendado para</div><div className="text-sm font-medium">{fmtData(servico.scheduled_at)} às {fmtHora(servico.scheduled_at)}</div></div>
+            {/* Horário — editável */}
+            <div className="px-4 py-3">
+              {editHorario ? (
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs text-gray-400 mb-1 block">Data e horário</label>
+                    <input type="datetime-local" value={novoHorario} onChange={e => setNovoHorario(e.target.value)}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-400 mb-2 block">Duração estimada</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[{l:'30min',v:30},{l:'1h',v:60},{l:'1h30',v:90},{l:'2h',v:120},{l:'3h',v:180},{l:'4h',v:240}].map(d => (
+                        <button key={d.v} onClick={() => setNovaDuracao(d.v)}
+                          className={`py-2 rounded-xl text-xs font-medium border transition ${novaDuracao === d.v ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-200'}`}>
+                          {d.l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={salvarHorario} className="flex-1 bg-primary text-white rounded-xl py-2.5 text-sm font-semibold">Salvar</button>
+                    <button onClick={() => setEditHorario(false)} className="px-4 bg-gray-100 text-gray-600 rounded-xl py-2.5 text-sm">Cancelar</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <Clock size={16} className="text-gray-400 flex-shrink-0"/>
+                  <div>
+                    <div className="text-xs text-gray-400">Agendado para</div>
+                    <div className="text-sm font-medium">{fmtData(servico.scheduled_at)} às {fmtHora(servico.scheduled_at)}
+                      {servico.scheduled_end && <span className="text-gray-400"> até {fmtHora(servico.scheduled_end)}</span>}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-3 px-4 py-3">
               <Wrench size={16} className="text-gray-400"/>
