@@ -145,13 +145,34 @@ export default function AtendimentoDetalhe() {
   async function salvarPeca() {
     if (!novaPeca.description) return
     const preco = parseFloat(String(novaPeca.unit_price).replace(',','.')) || 0
-    await supabase.from('service_parts').insert({ service_id: id, description: novaPeca.description, quantity: novaPeca.quantity, unit_price: preco })
-    const tp = [...pecas, {quantity:novaPeca.quantity, unit_price:preco}].reduce((s,p)=>s+(p.quantity*p.unit_price),0)
-    await supabase.from('services').update({ total_price: tp + parseFloat(servico?.labor_price||0) }).eq('id', id)
+    // Insere a peça
+    await supabase.from('service_parts').insert({
+      service_id: id,
+      description: novaPeca.description,
+      quantity: novaPeca.quantity,
+      unit_price: preco,
+    })
+    // Busca TODAS as peças do banco após inserir para ter o total correto
+    const { data: pecasAtuais } = await supabase
+      .from('service_parts').select('quantity, unit_price').eq('service_id', id)
+    const totalPecas = (pecasAtuais || []).reduce((s,p) => s+(p.quantity*p.unit_price), 0)
+    const maoAtual = parseFloat(servico?.labor_price || 0)
+    await supabase.from('services').update({
+      total_price: totalPecas + maoAtual || null
+    }).eq('id', id)
     setNovaPeca({description:'',quantity:1,unit_price:''}); setAddPeca(false); carregar()
   }
   async function removerPeca(pid) {
-    await supabase.from('service_parts').delete().eq('id', pid); carregar()
+    await supabase.from('service_parts').delete().eq('id', pid)
+    // Recalcula total após remover
+    const { data: pecasAtuais } = await supabase
+      .from('service_parts').select('quantity, unit_price').eq('service_id', id)
+    const totalPecas = (pecasAtuais || []).reduce((s,p) => s+(p.quantity*p.unit_price), 0)
+    const maoAtual = parseFloat(servico?.labor_price || 0)
+    await supabase.from('services').update({
+      total_price: totalPecas + maoAtual || null
+    }).eq('id', id)
+    carregar()
   }
 
   if (loading) return (
