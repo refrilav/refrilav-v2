@@ -131,15 +131,13 @@ export default function AtendimentoDetalhe() {
     setEditTrab(false); carregar()
   }
   async function salvarValores() {
-    if (totalDireto) {
-      const val = parseFloat(totalDireto.replace(',','.')) || 0
-      await supabase.from('services').update({ labor_price: null, total_price: val }).eq('id', id)
-    } else {
-      const val = parseFloat(String(mao).replace(',','.')) || 0
-      const tp = pecas.reduce((s,p) => s+(p.quantity*p.unit_price), 0)
-      await supabase.from('services').update({ labor_price: val||null, total_price: (val+tp)||null }).eq('id', id)
-    }
-    setEditVal(false); setTotalDireto(''); carregar()
+    const val = parseFloat(String(mao).replace(',','.')) || 0
+    const totalPecas = pecas.reduce((s,p) => s+(p.quantity*p.unit_price), 0)
+    await supabase.from('services').update({
+      labor_price: val || null,
+      total_price: (val + totalPecas) || null,
+    }).eq('id', id)
+    setEditVal(false); carregar()
   }
   async function salvarPeca() {
     if (!novaPeca.description) return
@@ -355,11 +353,8 @@ export default function AtendimentoDetalhe() {
               {tp > 0 && <div className="flex justify-between text-sm"><span className="text-gray-500">Peças</span><span>{fmt(tp)}</span></div>}
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">Mão de obra</label>
-                <input type="number" value={mao} onChange={e=>setMao(e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm" step="0.01" placeholder="0,00"/>
-              </div>
-              <div className="border-t border-dashed border-gray-200 pt-3">
-                <label className="text-xs text-gray-500 mb-1 block">Ou total direto (sem discriminar)</label>
-                <input type="number" value={totalDireto} onChange={e=>setTotalDireto(e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm" step="0.01" placeholder="Ex: 150,00"/>
+                <input type="number" value={mao} onChange={e=>setMao(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm" step="0.01" placeholder="0,00"/>
               </div>
               <div className="flex gap-2">
                 <button onClick={salvarValores} className="flex-1 bg-primary text-white rounded-xl py-2.5 text-sm font-semibold">Salvar</button>
@@ -368,12 +363,30 @@ export default function AtendimentoDetalhe() {
             </div>
           ) : (
             <div className="divide-y divide-gray-50">
-              {tp > 0 && <div className="flex justify-between px-4 py-3"><span className="text-sm text-gray-600">Peças</span><span className="text-sm font-medium">{fmt(tp)}</span></div>}
-              {servico.labor_price > 0 && <div className="flex justify-between px-4 py-3"><span className="text-sm text-gray-600">Mão de obra</span><span className="text-sm font-medium">{fmt(servico.labor_price)}</span></div>}
-              <div className="flex justify-between px-4 py-3 bg-gray-50"><span className="text-sm font-bold">Total</span><span className="text-base font-bold text-navy">{fmt(servico.total_price || (tp + parseFloat(servico.labor_price||0)))}</span></div>
+              {(() => {
+                const maoVal = parseFloat(servico.labor_price || 0)
+                const pecasComValor = tp > 0
+                // Discrimina só se tiver peças COM valor E mão de obra
+                const discriminar = pecasComValor && maoVal > 0
+                const total = servico.total_price || (tp + maoVal)
+                if (discriminar) return (
+                  <>
+                    <div className="flex justify-between px-4 py-3"><span className="text-sm text-gray-600">Peças</span><span className="text-sm font-medium">{fmt(tp)}</span></div>
+                    <div className="flex justify-between px-4 py-3"><span className="text-sm text-gray-600">Mão de obra</span><span className="text-sm font-medium">{fmt(maoVal)}</span></div>
+                    <div className="flex justify-between px-4 py-3 bg-gray-50"><span className="text-sm font-bold">Total</span><span className="text-base font-bold text-navy">{fmt(total)}</span></div>
+                  </>
+                )
+                // Caso contrário: só total
+                return <div className="flex justify-between px-4 py-3 bg-gray-50"><span className="text-sm font-bold">Total</span><span className="text-base font-bold text-navy">{fmt(total)}</span></div>
+              })()}
             </div>
           )}
         </div>
+
+        {/* Orçamento */}
+        <button onClick={()=>window.open(`/orcamento/${id}`,'_blank')} className="w-full bg-blue-50 text-blue-700 rounded-2xl py-4 font-semibold text-sm flex items-center justify-center gap-2">
+          <FileText size={18}/> Ver Orçamento
+        </button>
 
         {/* Recolher */}
         {podeEditar && (

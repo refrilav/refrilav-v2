@@ -206,38 +206,26 @@ export default function Recibo() {
           {/* Valores */}
           <div className="print-card bg-white rounded-2xl p-5 shadow-sm mb-4">
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Valor</h2>
-
-            {mostrarSomenteTotal ? (
-              /* Só total, sem discriminar */
-              <div className="flex justify-between items-center py-2">
-                <span className="text-base font-bold text-gray-900">Total</span>
-                <span className="text-base font-bold text-red-600">{fmt(totalGeral)}</span>
-              </div>
-            ) : (
-              /* Discriminado: peças + mão de obra + total */
-              <div className="space-y-2">
-                {totalPecas > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Peças</span>
-                    <span className="text-sm text-gray-900">{fmt(totalPecas)}</span>
-                  </div>
-                )}
-                {maoDeObra > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Mão de obra</span>
-                    <span className="text-sm text-gray-900">{fmt(maoDeObra)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between pt-3 border-t border-gray-100">
-                  <span className="text-base font-bold text-gray-900">Total</span>
-                  <span className="text-base font-bold text-red-600">{fmt(totalGeral)}</span>
+            {(() => {
+              const maoVal = parseFloat(dados.labor_price || 0)
+              const pecasComValor = totalPecas > 0
+              const discriminar = pecasComValor && maoVal > 0
+              const total = parseFloat(dados.total_price || 0) || (totalPecas + maoVal)
+              if (discriminar) return (
+                <div className="space-y-2">
+                  <div className="flex justify-between"><span className="text-sm text-gray-600">Peças</span><span className="text-sm">{fmt(totalPecas)}</span></div>
+                  <div className="flex justify-between"><span className="text-sm text-gray-600">Mão de obra</span><span className="text-sm">{fmt(maoVal)}</span></div>
+                  <div className="flex justify-between pt-3 border-t border-gray-100"><span className="text-base font-bold text-gray-900">Total</span><span className="text-base font-bold text-red-600">{fmt(total)}</span></div>
                 </div>
-              </div>
-            )}
-
-            {dados.payment_method && (
-              <p className="text-xs text-gray-400 text-right mt-1">{dados.payment_method}</p>
-            )}
+              )
+              return (
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-base font-bold text-gray-900">Total</span>
+                  <span className="text-base font-bold text-red-600">{fmt(total)}</span>
+                </div>
+              )
+            })()}
+            {dados.payment_method && <p className="text-xs text-gray-400 text-right mt-1">{dados.payment_method}</p>}
           </div>
 
           {/* Assinatura se houver */}
