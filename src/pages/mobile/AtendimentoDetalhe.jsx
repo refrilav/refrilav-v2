@@ -132,7 +132,10 @@ export default function AtendimentoDetalhe() {
   }
   async function salvarValores() {
     const val = parseFloat(String(mao).replace(',','.')) || 0
-    const totalPecas = pecas.reduce((s,p) => s+(p.quantity*p.unit_price), 0)
+    // Busca peças direto do banco para garantir valor atualizado
+    const { data: pecasAtuais } = await supabase
+      .from('service_parts').select('quantity, unit_price').eq('service_id', id)
+    const totalPecas = (pecasAtuais || []).reduce((s,p) => s+(p.quantity*p.unit_price), 0)
     await supabase.from('services').update({
       labor_price: val || null,
       total_price: (val + totalPecas) || null,
