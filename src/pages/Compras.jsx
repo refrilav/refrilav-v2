@@ -45,7 +45,15 @@ function parseNFe(xmlText) {
     }
   })
 
-  return { chave, numero, dataEmissao: dataEmissao?.substring(0,10), fornecedorNome, fornecedorCnpj, valorTotal, produtos }
+  // Extrai parcelas (duplicatas)
+  const dups = Array.from(doc.getElementsByTagName('dup'))
+  const parcelas = dups.map(dup => ({
+    numero: get(dup, 'nDup'),
+    vencimento: get(dup, 'dVenc'),
+    valor: parseFloat(get(dup, 'vDup') || '0'),
+  }))
+
+  return { chave, numero, dataEmissao: dataEmissao?.substring(0,10), fornecedorNome, fornecedorCnpj, valorTotal, produtos, parcelas }
 }
 
 export default function Compras() {

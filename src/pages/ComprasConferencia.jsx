@@ -123,8 +123,21 @@ export default function ComprasConferencia() {
         }
       }
 
-      // 4. Gerar conta a pagar
-      if (nfeData.valorTotal > 0) {
+      // 4. Gerar contas a pagar por parcela
+      const parcelas = nfeData.parcelas || []
+      if (parcelas.length > 0) {
+        for (const parcela of parcelas) {
+          await supabase.from('payables').insert({
+            supplier_name: nfeData.fornecedorNome || 'Fornecedor',
+            description: `NF-e ${nfeData.numero || ''} - Parcela ${parcela.numero} - ${nfeData.fornecedorNome || 'Fornecedor'}`,
+            amount: parcela.valor,
+            due_date: parcela.vencimento,
+            status: 'em_aberto',
+            category: 'Fornecedor',
+          })
+        }
+      } else if (nfeData.valorTotal > 0) {
+        // Sem parcelas — gera uma conta só
         await supabase.from('payables').insert({
           supplier_name: nfeData.fornecedorNome || 'Fornecedor',
           description: `NF-e ${nfeData.numero || ''} - ${nfeData.fornecedorNome || 'Fornecedor'}`,
@@ -174,6 +187,34 @@ export default function ComprasConferencia() {
             <p className="text-[10px] text-gray-300 mt-2 break-all font-mono">{nfeData.chave}</p>
           )}
         </div>
+
+        {/* Parcelas */}
+        {(nfeData.parcelas || []).length > 0 && (
+          <div className="bg-white rounded-2xl shadow-sm p-4">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+              Contas a Pagar — {nfeData.parcelas.length} parcela{nfeData.parcelas.length > 1 ? 's' : ''}
+            </p>
+            <div className="space-y-2">
+              {nfeData.parcelas.map((p, i) => (
+                <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Parcela {p.numero}</p>
+                    <p className="text-xs text-gray-400">Venc: {p.vencimento ? `${p.vencimento.substring(8,10)}/${p.vencimento.substring(5,7)}/${p.vencimento.substring(0,4)}` : '—'}</p>
+                  </div>
+                  <span className="text-sm font-bold text-navy">
+                    R$ {Number(p.valor).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                  </span>
+                </div>
+              ))}
+              <div className="flex justify-between pt-2 font-bold">
+                <span className="text-sm">Total</span>
+                <span className="text-sm text-navy">
+                  R$ {nfeData.parcelas.reduce((s,p) => s+p.valor, 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Produtos */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
