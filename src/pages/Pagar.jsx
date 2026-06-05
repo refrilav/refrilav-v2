@@ -56,7 +56,7 @@ export default function Pagar() {
 
   // Modal nova/editar conta
   const [modalConta, setModalConta] = useState(null)
-  const [formConta, setFormConta] = useState({ description:'', amount:'', due_date:'', category:'', supplier_id:'', supplier_name:'', recorrencia: null })
+  const [formConta, setFormConta] = useState({ description:'', amount:'', due_date:'', category:'', supplier_id:'', supplier_name:'', recorrencia: null, parcelas: 1 })
   const [salvandoConta, setSalvandoConta] = useState(false)
 
   // Fornecedor
@@ -156,7 +156,7 @@ export default function Pagar() {
   }
 
   function abrirNova() {
-    setFormConta({ description:'', amount:'', due_date: hoje(), category:'', supplier_id:'', supplier_name:'', recorrencia: null })
+    setFormConta({ description:'', amount:'', due_date: hoje(), category:'', supplier_id:'', supplier_name:'', recorrencia: null, parcelas: 1 })
     setBuscaFornecedor('')
     setMostrarFornecedores(false)
     setModalConta('novo')
@@ -166,7 +166,7 @@ export default function Pagar() {
       description: c.description||'', amount: c.amount||'',
       due_date: c.due_date||'', category: c.category||'',
       supplier_id: c.supplier_id||'', supplier_name: c.supplier_name||'',
-      recorrencia: c.recorrencia || null,
+      recorrencia: c.recorrencia || null, parcelas: 1,
     })
     setBuscaFornecedor(c.supplier_name || '')
     setMostrarFornecedores(false)
@@ -208,9 +208,12 @@ export default function Pagar() {
   async function salvarConta() {
     if (!formConta.description || !formConta.amount) return alert('Preencha descrição e valor.')
     setSalvandoConta(true)
-    const payload = {
+    const valorTotal = parseFloat(String(formConta.amount).replace(',','.')) || 0
+    const nParcelas = parseInt(formConta.parcelas) || 1
+    const valorParcela = nParcelas > 1 ? parseFloat((valorTotal / nParcelas).toFixed(2)) : valorTotal
+
+    const basePayload = {
       description: formConta.description,
-      amount: parseFloat(String(formConta.amount).replace(',','.')) || 0,
       due_date: formConta.due_date || null,
       category: formConta.category || null,
       supplier_id: formConta.supplier_id || null,
@@ -218,17 +221,35 @@ export default function Pagar() {
       recorrencia: formConta.recorrencia || null,
       status: 'em_aberto',
     }
+
     if (modalConta === 'novo') {
-      await supabase.from('payables').insert(payload)
-      // Se tiver recorrência, gera as próximas parcelas
-      if (formConta.recorrencia && formConta.due_date) {
-        const proximas = gerarDatasRecorrencia(formConta.due_date, formConta.recorrencia)
-        for (const data of proximas) {
-          await supabase.from('payables').insert({ ...payload, due_date: data })
+      if (nParcelas > 1) {
+        // Gera N parcelas mensais
+        for (let i = 0; i < nParcelas; i++) {
+          const [y, m, d] = (formConta.due_date || hoje()).split('-').map(Number)
+          const dataVenc = new Date(y, m - 1 + i, d)
+          const dataStr = `${dataVenc.getFullYear()}-${String(dataVenc.getMonth()+1).padStart(2,'0')}-${String(dataVenc.getDate()).padStart(2,'0')}`
+          // Ajuste no valor da última parcela para compensar arredondamento
+          const valor = i === nParcelas - 1 ? parseFloat((valorTotal - valorParcela * (nParcelas - 1)).toFixed(2)) : valorParcela
+          await supabase.from('payables').insert({
+            ...basePayload,
+            amount: valor,
+            description: `${formConta.description} (${i+1}/${nParcelas})`,
+            due_date: dataStr,
+          })
+        }
+      } else {
+        await supabase.from('payables').insert({ ...basePayload, amount: valorTotal })
+        // Recorrência
+        if (formConta.recorrencia && formConta.due_date) {
+          const proximas = gerarDatasRecorrencia(formConta.due_date, formConta.recorrencia)
+          for (const data of proximas) {
+            await supabase.from('payables').insert({ ...basePayload, amount: valorTotal, due_date: data })
+          }
         }
       }
     } else {
-      await supabase.from('payables').update(payload).eq('id', modalConta.id)
+      await supabase.from('payables').update({ ...basePayload, amount: valorTotal }).eq('id', modalConta.id)
     }
     setSalvandoConta(false)
     setModalConta(null)
@@ -446,17 +467,37 @@ export default function Pagar() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-gray-500 mb-1 block">Valor *</label>
+                  <label className="text-xs font-medium text-gray-500 mb-1 block">Valor total *</label>
                   <input type="number" value={formConta.amount} onChange={e => setFormConta(f=>({...f,amount:e.target.value}))}
                     placeholder="0,00" step="0.01"
                     className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-500 mb-1 block">Vencimento</label>
+                  <label className="text-xs font-medium text-gray-500 mb-1 block">Vencimento 1ª parcela</label>
                   <input type="date" value={formConta.due_date} onChange={e => setFormConta(f=>({...f,due_date:e.target.value}))}
                     className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
                 </div>
               </div>
+
+              {/* Parcelamento — só para nova conta */}
+              {modalConta === 'novo' && (
+                <div>
+                  <label className="text-xs font-medium text-gray-500 mb-2 block">Parcelamento</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {[1,2,3,4,5,6,8,10,12].map(n => (
+                      <button key={n} onClick={() => setFormConta(f=>({...f,parcelas:n, recorrencia: n>1 ? null : f.recorrencia}))}
+                        className={`px-3 py-2 rounded-xl text-xs font-semibold border transition ${formConta.parcelas===n?'bg-navy text-white border-navy':'bg-white text-gray-600 border-gray-200'}`}>
+                        {n===1 ? 'À vista' : `${n}x`}
+                      </button>
+                    ))}
+                  </div>
+                  {formConta.parcelas > 1 && formConta.amount && (
+                    <p className="text-xs text-blue-600 mt-1.5">
+                      {formConta.parcelas}x de {fmt(parseFloat(String(formConta.amount).replace(',','.')) / formConta.parcelas)} · vencimentos mensais
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Recorrência */}
               <div>
