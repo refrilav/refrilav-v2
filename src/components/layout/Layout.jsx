@@ -2,17 +2,25 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import {
   LayoutDashboard, Calendar, ClipboardList, Users, Wrench, FileText,
-  LogOut, Settings, ChevronLeft, ChevronRight, Bell
+  LogOut, Settings, ChevronLeft, ChevronRight, Menu, X
 } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 const navItems = [
-  { path: '/agenda', label: 'Agenda', icon: Calendar },
+  { path: '/agenda',        label: 'Agenda',        icon: Calendar },
+  { path: '/atendimentos',  label: 'Atendimentos',  icon: ClipboardList },
+  { path: '/oficina',       label: 'Oficina',        icon: Wrench },
+  { path: '/orcamentos',    label: 'Orçamentos',     icon: FileText },
+  { path: '/clientes',      label: 'Clientes',       icon: Users },
+  { path: '/dashboard',     label: 'Dashboard',      icon: LayoutDashboard },
+]
+
+// 4 itens fixos no nav inferior
+const navBottom = [
+  { path: '/agenda',       label: 'Agenda',       icon: Calendar },
   { path: '/atendimentos', label: 'Atendimentos', icon: ClipboardList },
-  { path: '/oficina', label: 'Oficina', icon: Wrench },
-  { path: '/orcamentos', label: 'Orçamentos', icon: FileText },
-  { path: '/clientes', label: 'Clientes', icon: Users },
-  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/oficina',      label: 'Oficina',      icon: Wrench },
+  { path: '/dashboard',    label: 'Dashboard',    icon: LayoutDashboard },
 ]
 
 export default function Layout() {
@@ -20,44 +28,126 @@ export default function Layout() {
   const location = useLocation()
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(false)
+  const [menuAberto, setMenuAberto] = useState(false)
   const isMobile = window.innerWidth < 1024
 
-  // No mobile, renderiza só o conteúdo + nav inferior
+  function navegar(path) {
+    navigate(path)
+    setMenuAberto(false)
+  }
+
+  // MOBILE
   if (isMobile) {
     return (
       <div className="flex flex-col min-h-screen bg-gray-50">
         <main className="flex-1 overflow-auto pb-20">
           <Outlet />
         </main>
+
         {/* Nav inferior mobile */}
-        <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 safe-bottom z-50">
+        <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-50"
+          style={{paddingBottom: 'env(safe-area-inset-bottom)'}}>
           <div className="flex">
-            {navItems.slice(0, 4).map(({ path, label, icon: Icon }) => {
+            {navBottom.map(({ path, label, icon: Icon }) => {
               const active = location.pathname === path
               return (
-                <button
-                  key={path}
-                  onClick={() => navigate(path)}
-                  className={`flex-1 flex flex-col items-center py-2 gap-0.5 text-xs transition ${
+                <button key={path} onClick={() => navegar(path)}
+                  className={`flex-1 flex flex-col items-center py-2 gap-0.5 transition ${
                     active ? 'text-primary' : 'text-gray-400'
-                  }`}
-                >
+                  }`}>
                   <Icon size={20} strokeWidth={active ? 2.5 : 1.8} />
                   <span className="text-[10px]">{label}</span>
                 </button>
               )
             })}
+
+            {/* Botão menu hamburguer */}
+            <button
+              onClick={() => setMenuAberto(true)}
+              className={`flex-1 flex flex-col items-center py-2 gap-0.5 transition ${
+                menuAberto ? 'text-primary' : 'text-gray-400'
+              }`}>
+              <Menu size={20} strokeWidth={1.8} />
+              <span className="text-[10px]">Menu</span>
+            </button>
           </div>
         </nav>
+
+        {/* Drawer do menu completo */}
+        {menuAberto && (
+          <>
+            {/* Overlay */}
+            <div
+              className="fixed inset-0 bg-black/40 z-50"
+              onClick={() => setMenuAberto(false)}
+            />
+            {/* Painel */}
+            <div className="fixed bottom-0 left-0 right-0 bg-white z-50 rounded-t-3xl"
+              style={{paddingBottom: 'max(24px, env(safe-area-inset-bottom))'}}>
+
+              {/* Handle */}
+              <div className="flex justify-center pt-3 pb-1">
+                <div className="w-10 h-1 bg-gray-200 rounded-full" />
+              </div>
+
+              {/* Header do drawer */}
+              <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center">
+                    <span className="text-white font-bold text-xs">R</span>
+                  </div>
+                  <span className="font-bold text-navy text-base">Refrilav</span>
+                </div>
+                <button onClick={() => setMenuAberto(false)} className="p-1.5 rounded-full bg-gray-100">
+                  <X size={18} className="text-gray-500" />
+                </button>
+              </div>
+
+              {/* Itens do menu */}
+              <div className="px-4 py-3 grid grid-cols-3 gap-2">
+                {navItems.map(({ path, label, icon: Icon }) => {
+                  const active = location.pathname === path
+                  return (
+                    <button key={path} onClick={() => navegar(path)}
+                      className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl transition ${
+                        active ? 'bg-primary/10 text-primary' : 'bg-gray-50 text-gray-600'
+                      }`}>
+                      <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
+                      <span className="text-[11px] font-medium text-center leading-tight">{label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Configurações e Sair */}
+              <div className="px-4 pb-2 grid grid-cols-2 gap-2 border-t border-gray-100 pt-3">
+                <button
+                  onClick={() => { navigate('/configuracoes'); setMenuAberto(false) }}
+                  className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-gray-50 text-gray-600"
+                >
+                  <Settings size={18} />
+                  <span className="text-sm font-medium">Configurações</span>
+                </button>
+                <button
+                  onClick={signOut}
+                  className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-red-50 text-red-600"
+                >
+                  <LogOut size={18} />
+                  <span className="text-sm font-medium">Sair</span>
+                </button>
+              </div>
+
+            </div>
+          </>
+        )}
       </div>
     )
   }
 
-  // Desktop: sidebar
+  // DESKTOP: sidebar
   return (
     <div className="flex min-h-screen bg-gray-50">
       <aside className={`flex flex-col bg-navy text-white transition-all duration-300 ${collapsed ? 'w-16' : 'w-56'} min-h-screen`}>
-        {/* Logo */}
         <div className={`flex items-center gap-3 px-4 py-5 border-b border-white/10 ${collapsed ? 'justify-center' : ''}`}>
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
             <span className="text-white font-bold text-sm">R</span>
@@ -65,18 +155,14 @@ export default function Layout() {
           {!collapsed && <span className="font-bold text-base tracking-wide">Refrilav</span>}
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 py-4 space-y-1 px-2">
           {navItems.map(({ path, label, icon: Icon }) => {
             const active = location.pathname === path
             return (
-              <button
-                key={path}
-                onClick={() => navigate(path)}
+              <button key={path} onClick={() => navigate(path)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition ${
                   active ? 'bg-primary text-white' : 'text-blue-100 hover:bg-white/10'
-                } ${collapsed ? 'justify-center' : ''}`}
-              >
+                } ${collapsed ? 'justify-center' : ''}`}>
                 <Icon size={18} />
                 {!collapsed && <span>{label}</span>}
               </button>
@@ -84,32 +170,24 @@ export default function Layout() {
           })}
         </nav>
 
-        {/* Bottom */}
         <div className="p-2 space-y-1 border-t border-white/10">
-          <button
-            onClick={() => navigate('/configuracoes')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-blue-100 hover:bg-white/10 transition ${collapsed ? 'justify-center' : ''}`}
-          >
+          <button onClick={() => navigate('/configuracoes')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-blue-100 hover:bg-white/10 transition ${collapsed ? 'justify-center' : ''}`}>
             <Settings size={18} />
             {!collapsed && <span>Configurações</span>}
           </button>
-          <button
-            onClick={signOut}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-blue-100 hover:bg-white/10 transition ${collapsed ? 'justify-center' : ''}`}
-          >
+          <button onClick={signOut}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-blue-100 hover:bg-white/10 transition ${collapsed ? 'justify-center' : ''}`}>
             <LogOut size={18} />
             {!collapsed && <span>Sair</span>}
           </button>
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="w-full flex items-center justify-center px-3 py-2 rounded-lg text-blue-200 hover:bg-white/10 transition"
-          >
+          <button onClick={() => setCollapsed(!collapsed)}
+            className="w-full flex items-center justify-center px-3 py-2 rounded-lg text-blue-200 hover:bg-white/10 transition">
             {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
           </button>
         </div>
       </aside>
 
-      {/* Conteúdo */}
       <main className="flex-1 overflow-auto">
         <Outlet />
       </main>
