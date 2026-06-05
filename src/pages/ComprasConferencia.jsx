@@ -20,6 +20,9 @@ export default function ComprasConferencia() {
   const { state } = useLocation()
   const { nfeData, conciliacao } = state || {}
   const [salvando, setSalvando] = useState(false)
+  const [precoVenda, setPrecoVenda] = useState(() =>
+    Object.fromEntries((conciliacao || []).filter(c => c.modo !== 'ignorar').map((_, i) => [i, '']))
+  )
 
   // Edição dos produtos novos
   const [editandoIdx, setEditandoIdx] = useState(null)
@@ -66,17 +69,17 @@ export default function ComprasConferencia() {
         let stockItemId = item.stock_item_id
 
         if (item.modo === 'novo') {
-          // Cria no estoque
+          const sale = parseFloat(String(precoVenda[idx] || '0').replace(',','.')) || null
           const { data: novoItem } = await supabase.from('stock_items').insert({
             name: prod.name,
             code: prod.code || null,
             unit: prod.unit || 'un',
             cost_price: prod.unit_price,
+            sale_price: sale,
             quantity: prod.quantity,
           }).select().single()
           stockItemId = novoItem?.id
 
-          // Registra movimentação de entrada
           if (stockItemId) {
             await supabase.from('stock_movements').insert({
               stock_item_id: stockItemId,
@@ -86,12 +89,13 @@ export default function ComprasConferencia() {
             })
           }
         } else if (item.modo === 'existente' && stockItemId) {
-          // Atualiza quantidade no estoque
+          const sale = parseFloat(String(precoVenda[idx] || '0').replace(',','.')) || null
           const { data: estoqueAtual } = await supabase.from('stock_items').select('quantity').eq('id', stockItemId).single()
           const novaQty = (estoqueAtual?.quantity || 0) + prod.quantity
           await supabase.from('stock_items').update({
             quantity: novaQty,
-            cost_price: prod.unit_price, // atualiza custo com o da NF
+            cost_price: prod.unit_price,
+            ...(sale ? { sale_price: sale } : {}),
           }).eq('id', stockItemId)
 
           await supabase.from('stock_movements').insert({
@@ -166,7 +170,7 @@ export default function ComprasConferencia() {
               const prod = item.produto_nfe
               return (
                 <div key={idx} className="px-4 py-3">
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
@@ -182,10 +186,27 @@ export default function ComprasConferencia() {
                       <div className="flex gap-3 mt-1 text-xs text-gray-500 flex-wrap">
                         {prod.code && <span>#{prod.code}</span>}
                         <span>{prod.quantity} {prod.unit}</span>
-                        <span>{fmt(prod.unit_price)}/un</span>
+                        <span className="text-gray-700 font-medium">Custo: {fmt(prod.unit_price)}/un</span>
                       </div>
                     </div>
                     <p className="text-sm font-bold text-gray-900 flex-shrink-0">{fmt(prod.total_price)}</p>
+                  </div>
+                  {/* Campo preço de venda */}
+                  <div className="flex items-center gap-2 bg-orange-50 rounded-xl px-3 py-2">
+                    <span className="text-xs text-orange-700 font-medium flex-shrink-0">Preço venda:</span>
+                    <input
+                      type="number"
+                      value={precoVenda[idx] || ''}
+                      onChange={e => setPrecoVenda(p => ({...p, [idx]: e.target.value}))}
+                      placeholder="R$ 0,00"
+                      step="0.01"
+                      className="flex-1 bg-transparent text-sm font-semibold text-orange-800 focus:outline-none placeholder-orange-300"
+                    />
+                    {precoVenda[idx] > 0 && prod.unit_price > 0 && (
+                      <span className="text-xs text-green-600 font-semibold flex-shrink-0">
+                        +{(((precoVenda[idx] - prod.unit_price) / prod.unit_price) * 100).toFixed(0)}%
+                      </span>
+                    )}
                   </div>
                 </div>
               )
