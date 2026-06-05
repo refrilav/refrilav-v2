@@ -121,6 +121,18 @@ export default function ComprasConferencia() {
         }
       }
 
+      // 4. Gerar conta a pagar
+      if (nfeData.valorTotal > 0) {
+        await supabase.from('payables').insert({
+          supplier_name: nfeData.fornecedorNome || 'Fornecedor',
+          description: `NF-e ${nfeData.numero || ''} - ${nfeData.fornecedorNome || 'Fornecedor'}`,
+          amount: nfeData.valorTotal,
+          due_date: nfeData.dataEmissao || hoje(),
+          status: 'em_aberto',
+          category: 'Fornecedor',
+        })
+      }
+
       navigate('/compras')
     } catch (err) {
       alert('Erro ao salvar: ' + err.message)
