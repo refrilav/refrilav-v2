@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { ChevronLeft, Package } from 'lucide-react'
+import { ChevronLeft, Package, Trash2 } from 'lucide-react'
 
 function fmt(v) {
   if (!v && v !== 0) return 'R$ 0,00'
@@ -31,6 +31,13 @@ export default function CompraDetalhe() {
     setLoading(false)
   }
 
+  async function excluir() {
+    if (!window.confirm('Excluir esta compra? Os itens de estoque não serão revertidos.')) return
+    await supabase.from('purchase_items').delete().eq('purchase_id', id)
+    await supabase.from('purchases').delete().eq('id', id)
+    navigate('/compras')
+  }
+
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"/></div>
   if (!compra) return <div className="min-h-screen flex items-center justify-center text-gray-400 text-sm">Compra não encontrada</div>
 
@@ -39,16 +46,20 @@ export default function CompraDetalhe() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-navy text-white px-4 pt-12 pb-5">
-        <button onClick={() => navigate('/compras')} className="flex items-center gap-1 text-blue-200 text-sm mb-3">
-          <ChevronLeft size={18}/> Compras
-        </button>
+        <div className="flex items-center justify-between mb-3">
+          <button onClick={() => navigate('/compras')} className="flex items-center gap-1 text-blue-200 text-sm">
+            <ChevronLeft size={18}/> Compras
+          </button>
+          <button onClick={excluir} className="flex items-center gap-1.5 bg-white/10 text-red-300 px-3 py-1.5 rounded-full text-xs font-medium">
+            <Trash2 size={13}/> Excluir
+          </button>
+        </div>
         <h1 className="text-lg font-bold">{compra.supplier_name || '—'}</h1>
         {compra.nfe_number && <p className="text-blue-200 text-sm mt-0.5">NF-e {compra.nfe_number}</p>}
       </div>
 
       <div className="px-4 py-4 space-y-4">
 
-        {/* Dados da compra */}
         <div className="bg-white rounded-2xl shadow-sm p-4">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Informações</p>
           <div className="grid grid-cols-2 gap-3">
@@ -65,7 +76,6 @@ export default function CompraDetalhe() {
           )}
         </div>
 
-        {/* Itens */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-50">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Produtos ({itens.length})</p>
