@@ -86,7 +86,7 @@ export default function AtendimentoDetalhe() {
       await supabase.from('reviews').delete().eq('service_id', id)
       // Desvincula OS da oficina (não deleta, só remove o vínculo)
       await supabase.from('workshop_orders').update({ service_id: null }).eq('service_id', id)
-      // Remove vínculo de workshop_order_id do serviço antes de deletar
+      await supabase.from('quotes').update({ service_id: null }).eq('service_id', id)
       await supabase.from('services').update({ workshop_order_id: null }).eq('id', id)
       // Agora deleta o atendimento
       const { error } = await supabase.from('services').delete().eq('id', id)
