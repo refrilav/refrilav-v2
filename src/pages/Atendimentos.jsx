@@ -1,7 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Filter, ChevronRight, Clock, User } from 'lucide-react'
+import { Search, ChevronRight, Clock, User, Download } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+
+function exportarExcel(dados, nomeArquivo) {
+  import('https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs').then(XLSX => {
+    const ws = XLSX.utils.json_to_sheet(dados)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Dados')
+    XLSX.writeFile(wb, nomeArquivo)
+  })
+}
 
 const FILTROS = [
   { label: 'Todos', value: '' },
@@ -62,7 +71,23 @@ export default function Atendimentos() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-4 pt-12 pb-4 safe-top sticky top-0 z-10">
-        <h1 className="text-lg font-bold text-navy mb-3">Atendimentos</h1>
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-lg font-bold text-navy">Atendimentos</h1>
+          <button
+            onClick={() => exportarExcel(filtrados.map(s => ({
+              Cliente: s.clients?.name || '',
+              Equipamento: [s.equipment, s.brand, s.model].filter(Boolean).join(' '),
+              Tipo: s.type || '',
+              Status: STATUS_INFO[s.status]?.label || s.status || '',
+              Data: s.scheduled_at ? s.scheduled_at.substring(0,10) : '',
+              Hora: s.scheduled_at ? s.scheduled_at.substring(11,16) : '',
+              Total: s.total_price || '',
+            })), 'atendimentos.xlsx')}
+            className="flex items-center gap-1.5 bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"
+          >
+            <Download size={13} /> Excel
+          </button>
+        </div>
         {/* Busca */}
         <div className="relative mb-3">
           <input

@@ -1,6 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
-import { Search, User, Phone, MapPin, Edit2, Trash2, X, Save } from 'lucide-react'
+import { Search, User, Phone, MapPin, Edit2, Trash2, X, Save, Download } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+
+function exportarExcel(dados, nomeArquivo) {
+  import('https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs').then(XLSX => {
+    const ws = XLSX.utils.json_to_sheet(dados)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Dados')
+    XLSX.writeFile(wb, nomeArquivo)
+  })
+}
 
 export default function Clientes() {
   const [busca, setBusca] = useState('')
@@ -74,7 +83,21 @@ export default function Clientes() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-4 pt-12 pb-4 safe-top sticky top-0 z-10">
-        <h1 className="text-lg font-bold text-navy mb-3">Clientes</h1>
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-lg font-bold text-navy">Clientes</h1>
+          <button
+            onClick={() => exportarExcel(clientes.map(c => ({
+              Nome: c.name || '',
+              Telefone: c.phone || '',
+              Endereço: c.address || '',
+              Bairro: c.neighborhood || '',
+              Cidade: c.city || '',
+            })), 'clientes.xlsx')}
+            className="flex items-center gap-1.5 bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"
+          >
+            <Download size={13} /> Excel
+          </button>
+        </div>
         <div className="relative">
           <input
             value={busca}
