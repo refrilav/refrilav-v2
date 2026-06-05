@@ -31,7 +31,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b border-gray-100 px-4 pt-12 pb-4 safe-top">
+      <div className="bg-white border-b border-gray-100 px-4 pt-4 pb-4">
         <h1 className="text-lg font-bold text-navy">Dashboard</h1>
         <p className="text-xs text-gray-400 mt-0.5">Visão geral de hoje</p>
       </div>

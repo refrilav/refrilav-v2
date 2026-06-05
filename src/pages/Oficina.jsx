@@ -46,7 +46,7 @@ export default function Oficina() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 pt-12 pb-4 safe-top sticky top-0 z-10">
+      <div className="bg-white border-b border-gray-100 px-4 pt-4 pb-4 sticky top-0 z-10">
         <h1 className="text-lg font-bold text-navy mb-3">Oficina</h1>
         <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
           {FILTROS.slice(0, 6).map(f => (

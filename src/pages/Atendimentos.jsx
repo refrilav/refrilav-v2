@@ -70,7 +70,7 @@ export default function Atendimentos() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 pt-12 pb-4 safe-top sticky top-0 z-10">
+      <div className="bg-white border-b border-gray-100 px-4 pt-4 pb-4 sticky top-0 z-10">
         <div className="flex items-center justify-between mb-3">
           <h1 className="text-lg font-bold text-navy">Atendimentos</h1>
           <button
