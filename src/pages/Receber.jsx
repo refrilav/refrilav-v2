@@ -317,6 +317,11 @@ export default function Receber() {
               )}
               {c.status === 'recebido' && (
                 <div className="flex border-t border-gray-50">
+                  <button onClick={() => abrirEditar(c)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 transition">
+                    <Edit2 size={14} /> Editar
+                  </button>
+                  <div className="w-px bg-gray-50" />
                   <button onClick={() => excluir(c.id)}
                     className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-red-500 hover:bg-red-50 transition">
                     <Trash2 size={14} /> Excluir

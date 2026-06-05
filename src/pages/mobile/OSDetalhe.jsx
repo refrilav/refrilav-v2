@@ -438,31 +438,64 @@ export default function OSDetalhe() {
       </div>
 
       {/* CTA fixo */}
-      {podeEditar && PROXIMA_ETAPA[os.etapa] && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 safe-bottom">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 safe-bottom">
+        {podeEditar && os.etapa !== 'pronto' && PROXIMA_ETAPA[os.etapa] && (
+          <div className="flex gap-2">
+            <button
+              onClick={avancarEtapa}
+              disabled={salvando}
+              className="flex-1 rounded-2xl py-4 font-bold text-sm disabled:opacity-60 active:scale-[0.98] transition bg-primary text-white flex items-center justify-center gap-1"
+            >
+              {salvando ? '...' : LABEL_BOTAO[os.etapa]}
+            </button>
+            <button
+              onClick={async () => {
+                if (!window.confirm('Concluir OS e gerar cobrança agora?')) return
+                setSalvando(true)
+                const now = new Date()
+                const nowStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}T${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
+                await supabase.from('workshop_orders').update({ etapa: 'entregue' }).eq('id', id)
+                const total = os.total_price || 0
+                if (total > 0) {
+                  await supabase.from('receivables').insert({
+                    workshop_order_id: id,
+                    client_id: os.client_id,
+                    description: `Oficina - ${os.clients?.name || 'Cliente'} - ${[os.equipment, os.brand, os.model].filter(Boolean).join(' ')}`,
+                    amount: total,
+                    due_date: nowStr.substring(0, 10),
+                    status: 'em_aberto',
+                  })
+                }
+                setSalvando(false)
+                buscar()
+              }}
+              disabled={salvando}
+              className="flex-1 rounded-2xl py-4 font-bold text-sm disabled:opacity-60 active:scale-[0.98] transition bg-green-600 text-white flex items-center justify-center gap-1"
+            >
+              <CheckCircle size={16} />
+              {salvando ? '...' : 'Concluir'}
+            </button>
+          </div>
+        )}
+
+        {podeEditar && os.etapa === 'pronto' && (
           <button
             onClick={avancarEtapa}
             disabled={salvando}
-            className={`w-full rounded-2xl py-4 font-bold text-base disabled:opacity-60 active:scale-[0.98] transition shadow-lg flex items-center justify-center gap-2 ${
-              PROXIMA_ETAPA[os.etapa] === 'entregue'
-                ? 'bg-green-600 text-white'
-                : 'bg-primary text-white'
-            }`}
+            className="w-full rounded-2xl py-4 font-bold text-base disabled:opacity-60 active:scale-[0.98] transition shadow-lg flex items-center justify-center gap-2 bg-green-600 text-white"
           >
-            {PROXIMA_ETAPA[os.etapa] === 'entregue' && <CheckCircle size={20} />}
-            {salvando ? 'Salvando...' : LABEL_BOTAO[os.etapa]}
+            <CheckCircle size={20} />
+            {salvando ? 'Salvando...' : 'Registrar Entrega e Gerar Cobrança'}
           </button>
-        </div>
-      )}
+        )}
 
-      {os.etapa === 'entregue' && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 safe-bottom">
+        {os.etapa === 'entregue' && (
           <div className="w-full bg-green-50 text-green-700 rounded-2xl py-4 font-semibold text-sm text-center flex items-center justify-center gap-2">
             <CheckCircle size={18} />
             Entregue em {fmtData(os.updated_at)}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
