@@ -74,9 +74,12 @@ export default function Receber() {
 
   async function carregar() {
     setLoading(true)
-    const mes = mesStr(mesRef)
-    const inicio = mes + '-01'
-    const fim = mes + '-31'
+    const ano = mesRef.getFullYear()
+    const mes = mesRef.getMonth() + 1
+    const inicio = `${ano}-${String(mes).padStart(2,'0')}-01`
+    // Último dia real do mês
+    const ultimoDia = new Date(ano, mes, 0).getDate()
+    const fim = `${ano}-${String(mes).padStart(2,'0')}-${String(ultimoDia).padStart(2,'0')}`
     const { data } = await supabase
       .from('receivables')
       .select('*, clients(name)')
