@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { Plus, ChevronLeft, ChevronRight } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import ModalNovoAtendimento from '../components/ui/ModalNovoAtendimento'
 
@@ -122,20 +122,34 @@ export default function Agenda() {
 
       {/* Header semana */}
       <div className="bg-white border-b border-gray-100 flex-shrink-0">
-        <div className="flex text-xs text-gray-500 pt-3 pb-1 px-2">
-          {(() => {
-            const meses = semana.map(d => d.getMonth())
-            const mesUnico = meses.every(m => m === meses[0])
-            if (mesUnico) return <span className="flex-1 text-center">{MESES[meses[0]]}</span>
-            const corte = meses.findIndex((m,i) => i > 0 && m !== meses[i-1])
-            return (
-              <>
-                <span style={{flex:corte}} className="text-center border-r border-gray-100">{MESES_CURTO[meses[0]]}</span>
-                <span style={{flex:7-corte}} className="text-center">{MESES[meses[meses.length-1]]}</span>
-              </>
-            )
-          })()}
+        {/* Navegação de semana */}
+        <div className="flex items-center px-2 pt-3 pb-1 gap-1">
+          <button onClick={() => {
+            const nova = semana.map(d => { const n = new Date(d); n.setDate(d.getDate()-7); return n })
+            setSemana(nova); setDataSelecionada(nova[0])
+          }} className="p-1.5 rounded-lg hover:bg-gray-100 flex-shrink-0">
+            <ChevronLeft size={16} className="text-gray-500"/>
+          </button>
+          <div className="flex-1 text-center text-xs text-gray-500">
+            {(() => {
+              const meses = semana.map(d => d.getMonth())
+              const mesUnico = meses.every(m => m === meses[0])
+              if (mesUnico) return `${MESES[meses[0]]} ${semana[0].getFullYear()}`
+              return `${MESES_CURTO[meses[0]]} / ${MESES_CURTO[meses[meses.length-1]]} ${semana[6].getFullYear()}`
+            })()}
+          </div>
+          <button onClick={irParaHoje} className="text-xs text-primary font-semibold px-2 py-1 rounded-lg hover:bg-primary/10 flex-shrink-0">
+            Hoje
+          </button>
+          <button onClick={() => {
+            const nova = semana.map(d => { const n = new Date(d); n.setDate(d.getDate()+7); return n })
+            setSemana(nova); setDataSelecionada(nova[0])
+          }} className="p-1.5 rounded-lg hover:bg-gray-100 flex-shrink-0">
+            <ChevronRight size={16} className="text-gray-500"/>
+          </button>
         </div>
+
+        {/* Dias da semana */}
         <div className="grid grid-cols-7 px-1 pb-2">
           {semana.map((d, i) => {
             const ds = dateStr(d)
