@@ -3,7 +3,7 @@ import { useAuth } from '../../hooks/useAuth'
 import {
   LayoutDashboard, Users, Wrench, FileText, Calendar, ClipboardList,
   LogOut, Settings, ChevronLeft, ChevronRight, Menu, X,
-  TrendingUp, TrendingDown, Package, ShoppingCart, BarChart2, DollarSign
+  TrendingUp, TrendingDown, Package, ShoppingCart, BarChart2, DollarSign, ShoppingBag
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -22,6 +22,7 @@ const GRUPOS = [
     items: [
       { path: '/clientes',     label: 'Clientes',       icon: Users           },
       { path: '/orcamentos',   label: 'Orçamentos',     icon: FileText        },
+      { path: '/vendas',       label: 'Vendas Avulsas', icon: ShoppingBag     },
     ]
   },
   {

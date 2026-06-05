@@ -9,6 +9,7 @@ import Atendimentos from './pages/Atendimentos'
 import Clientes from './pages/Clientes'
 import Oficina from './pages/Oficina'
 import Orcamentos from './pages/Orcamentos'
+import Vendas from './pages/Vendas'
 import Receber from './pages/Receber'
 import Pagar from './pages/Pagar'
 import Configuracoes from './pages/Configuracoes'
@@ -49,6 +50,7 @@ function AppRoutes() {
         <Route path="atendimentos" element={<Atendimentos />} />
         <Route path="oficina" element={<Oficina />} />
         <Route path="orcamentos" element={<Orcamentos />} />
+        <Route path="vendas" element={<Vendas />} />
         <Route path="receber" element={<Receber />} />
         <Route path="pagar" element={<Pagar />} />
         <Route path="fluxo" element={<FluxoCaixa />} />
