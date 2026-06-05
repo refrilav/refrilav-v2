@@ -39,7 +39,7 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
 
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
-        <Route index element={<Navigate to="/agenda" replace />} />
+        <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="agenda" element={<Agenda />} />
         <Route path="atendimentos" element={<Atendimentos />} />
         <Route path="oficina" element={<Oficina />} />

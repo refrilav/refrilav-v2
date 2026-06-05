@@ -39,7 +39,6 @@ export default function Dashboard() {
   const [empresa, setEmpresa] = useState({})
   const [financeiro, setFinanceiro] = useState({ saldo: 0, aReceber: 0, aPagar: 0 })
   const [atrasados, setAtrasados] = useState({ receber: [], pagar: [] })
-  const [orcamentos, setOrcamentos] = useState({ quantidade: 0, valorAprovado: 0 })
   const [atendimentosHoje, setAtendimentosHoje] = useState([])
   const [atrasoAberto, setAtrasoAberto] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -74,16 +73,6 @@ export default function Dashboard() {
       supabase.from('payables').select('id, description, amount, due_date').eq('status', 'pendente').lt('due_date', hojeStr).order('due_date').range(0, 49),
     ])
     setAtrasados({ receber: recAtrasado || [], pagar: pagAtrasado || [] })
-
-    // Orçamentos do mês
-    const { data: orcs } = await supabase
-      .from('quotes')
-      .select('status, total_price')
-      .gte('created_at', mes + '-01')
-      .range(0, 9999)
-    const qtd = (orcs || []).length
-    const valorAprovado = (orcs || []).filter(o => o.status === 'aprovado').reduce((s, o) => s + Number(o.total_price || 0), 0)
-    setOrcamentos({ quantidade: qtd, valorAprovado })
 
     // Atendimentos de hoje
     const { data: atend } = await supabase
@@ -224,28 +213,6 @@ export default function Dashboard() {
             )}
           </div>
         )}
-
-        {/* Orçamentos e vendas */}
-        <div className="bg-white rounded-2xl shadow-sm p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-base font-bold text-gray-900">Orçamentos e vendas</h2>
-              <p className="text-sm text-gray-400 capitalize">{mesNome}</p>
-            </div>
-            <button onClick={() => navigate('/orcamentos')}
-              className="text-xs text-blue-600 font-semibold">Ver todos</button>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gray-50 rounded-xl p-3">
-              <p className="text-xs text-gray-500 mb-1">Orçamentos criados</p>
-              <p className="text-2xl font-bold text-gray-900">{orcamentos.quantidade}</p>
-            </div>
-            <div className="bg-green-50 rounded-xl p-3">
-              <p className="text-xs text-gray-500 mb-1">Valor aprovado</p>
-              <p className="text-lg font-bold text-green-700">{fmt(orcamentos.valorAprovado)}</p>
-            </div>
-          </div>
-        </div>
 
         {/* Atendimentos de hoje */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
