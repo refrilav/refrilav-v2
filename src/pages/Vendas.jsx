@@ -97,7 +97,7 @@ export default function Vendas() {
       const nowStr = now.toISOString().substring(0,10)
 
       // Cria a venda
-      const { data: venda } = await supabase.from('sales').insert({
+      const { data: venda, error: errVenda } = await supabase.from('sales').insert({
         client_id: clienteSelecionado?.id || null,
         client_name: clienteSelecionado?.name || buscaCliente || 'Venda balcão',
         total,
@@ -106,6 +106,8 @@ export default function Vendas() {
         notes: notas || null,
         status: 'concluida',
       }).select().single()
+
+      if (errVenda || !venda) throw new Error('Erro ao criar venda: ' + (errVenda?.message || 'resposta vazia'))
 
       // Itens da venda + desconto do estoque
       for (const item of itens) {
