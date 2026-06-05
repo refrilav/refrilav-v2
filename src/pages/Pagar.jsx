@@ -484,12 +484,19 @@ export default function Pagar() {
                 <div>
                   <label className="text-xs font-medium text-gray-500 mb-2 block">Parcelamento</label>
                   <div className="flex gap-2 flex-wrap">
-                    {[1,2,3,4,5,6,8,10,12].map(n => (
+                    {[1,2,3,4,5,6,8,10,12,18,24,36,48,60].map(n => (
                       <button key={n} onClick={() => setFormConta(f=>({...f,parcelas:n, recorrencia: n>1 ? null : f.recorrencia}))}
                         className={`px-3 py-2 rounded-xl text-xs font-semibold border transition ${formConta.parcelas===n?'bg-navy text-white border-navy':'bg-white text-gray-600 border-gray-200'}`}>
                         {n===1 ? 'À vista' : `${n}x`}
                       </button>
                     ))}
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-xs text-gray-400">Outro:</span>
+                    <input type="number" min={1} max={360}
+                      placeholder="Ex: 72"
+                      onChange={e => { const v = parseInt(e.target.value)||1; setFormConta(f=>({...f,parcelas:v,recorrencia:v>1?null:f.recorrencia})) }}
+                      className="w-20 border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:border-primary"/>
                   </div>
                   {formConta.parcelas > 1 && formConta.amount && (
                     <p className="text-xs text-blue-600 mt-1.5">
