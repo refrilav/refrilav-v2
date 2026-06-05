@@ -1,12 +1,20 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import {
   ChevronLeft, ChevronRight, Search, Plus, Edit2, Trash2,
-  CheckCircle, X, Save, User
+  CheckCircle, X, Save, User, RefreshCw
 } from 'lucide-react'
 
 const FORMAS_PAGAMENTO = ['Dinheiro', 'Pix', 'Cartão de débito', 'Cartão de crédito', 'Transferência', 'Boleto', 'Cheque']
-const CATEGORIAS_PADRAO = ['Fornecedor', 'Aluguel', 'Salário', 'Impostos', 'Serviços', 'Equipamentos', 'Peças', 'Outros']
+const CATS_PADRAO = ['Fornecedor', 'Aluguel', 'Salário', 'Impostos', 'Serviços', 'Equipamentos', 'Peças', 'Outros']
+const RECORRENCIAS = [
+  { value: null, label: 'Não' },
+  { value: 'mensal', label: 'Mensal' },
+  { value: 'bimestral', label: 'Bimestral' },
+  { value: 'trimestral', label: 'Trimestral' },
+  { value: 'semestral', label: 'Semestral' },
+  { value: 'anual', label: 'Anual' },
+]
 
 function fmt(v) {
   if (!v && v !== 0) return 'R$ 0,00'
@@ -25,19 +33,11 @@ function hoje() {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 }
 
-const STATUS_STYLE = {
-  em_aberto: { label: 'Em aberto', bg: 'bg-blue-100',  text: 'text-blue-700'  },
-  vencido:   { label: 'Vencido',   bg: 'bg-red-100',   text: 'text-red-700'   },
-  pago:      { label: 'Pago',      bg: 'bg-green-100', text: 'text-green-700' },
-}
-
 const CATS_KEY = 'refrilav_categorias_pagar'
 function carregarCats() {
-  try { return JSON.parse(localStorage.getItem(CATS_KEY)) || CATEGORIAS_PADRAO } catch { return CATEGORIAS_PADRAO }
+  try { return JSON.parse(localStorage.getItem(CATS_KEY)) || CATS_PADRAO } catch { return CATS_PADRAO }
 }
-function salvarCats(cats) {
-  localStorage.setItem(CATS_KEY, JSON.stringify(cats))
-}
+function salvarCatsLS(cats) { localStorage.setItem(CATS_KEY, JSON.stringify(cats)) }
 
 export default function Pagar() {
   const [mesRef, setMesRef] = useState(new Date())
@@ -45,6 +45,7 @@ export default function Pagar() {
   const [contas, setContas] = useState([])
   const [loading, setLoading] = useState(true)
   const [filtroCard, setFiltroCard] = useState(null)
+  const [filtroCategoria, setFiltroCategoria] = useState(null)
   const [categorias, setCategorias] = useState(carregarCats)
 
   // Modal pagar
@@ -55,22 +56,23 @@ export default function Pagar() {
 
   // Modal nova/editar conta
   const [modalConta, setModalConta] = useState(null)
-  const [formConta, setFormConta] = useState({ description:'', amount:'', due_date:'', category:'', supplier_id:'', supplier_name:'' })
+  const [formConta, setFormConta] = useState({ description:'', amount:'', due_date:'', category:'', supplier_id:'', supplier_name:'', recorrencia: null })
   const [salvandoConta, setSalvandoConta] = useState(false)
 
   // Fornecedor
   const [buscaFornecedor, setBuscaFornecedor] = useState('')
   const [fornecedores, setFornecedores] = useState([])
   const [mostrarFornecedores, setMostrarFornecedores] = useState(false)
+  const fornecedorRef = useRef()
 
-  // Gerenciar categorias
+  // Categorias
   const [modalCats, setModalCats] = useState(false)
   const [novaCat, setNovaCat] = useState('')
 
   useEffect(() => { carregar() }, [mesRef])
 
   useEffect(() => {
-    if (buscaFornecedor.length < 2) { setFornecedores([]); return }
+    if (buscaFornecedor.length < 2) { setFornecedores([]); setMostrarFornecedores(false); return }
     const t = setTimeout(async () => {
       const { data } = await supabase.from('suppliers').select('id, name').ilike('name', `%${buscaFornecedor}%`).range(0, 9)
       setFornecedores(data || [])
@@ -78,6 +80,17 @@ export default function Pagar() {
     }, 300)
     return () => clearTimeout(t)
   }, [buscaFornecedor])
+
+  // Fechar dropdown de fornecedor ao clicar fora
+  useEffect(() => {
+    function handleClick(e) {
+      if (fornecedorRef.current && !fornecedorRef.current.contains(e.target)) {
+        setMostrarFornecedores(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
 
   async function carregar() {
     setLoading(true)
@@ -113,9 +126,10 @@ export default function Pagar() {
   const filtradas = contas.filter(c => {
     if (busca) {
       const desc = (c.description || '').toLowerCase()
-      const forn = (c.suppliers?.name || '').toLowerCase()
+      const forn = (c.supplier_name || '').toLowerCase()
       if (!desc.includes(busca.toLowerCase()) && !forn.includes(busca.toLowerCase())) return false
     }
+    if (filtroCategoria && c.category !== filtroCategoria) return false
     if (filtroCard === 'vencido')  return stNorm(c) === 'vencido'
     if (filtroCard === 'hoje')     return c.status !== 'pago' && c.due_date === hojeStr
     if (filtroCard === 'a_vencer') return c.status !== 'pago' && c.due_date > hojeStr
@@ -142,27 +156,53 @@ export default function Pagar() {
   }
 
   function abrirNova() {
-    setFormConta({ description:'', amount:'', due_date: hoje(), category:'', supplier_id:'', supplier_name:'' })
+    setFormConta({ description:'', amount:'', due_date: hoje(), category:'', supplier_id:'', supplier_name:'', recorrencia: null })
     setBuscaFornecedor('')
+    setMostrarFornecedores(false)
     setModalConta('novo')
   }
   function abrirEditar(c) {
     setFormConta({
       description: c.description||'', amount: c.amount||'',
       due_date: c.due_date||'', category: c.category||'',
-      supplier_id: c.supplier_id||'', supplier_name: c.suppliers?.name||''
+      supplier_id: c.supplier_id||'', supplier_name: c.supplier_name||'',
+      recorrencia: c.recorrencia || null,
     })
-    setBuscaFornecedor(c.suppliers?.name || '')
+    setBuscaFornecedor(c.supplier_name || '')
+    setMostrarFornecedores(false)
     setModalConta(c)
   }
 
   async function criarFornecedor() {
     if (!buscaFornecedor.trim()) return
-    const { data } = await supabase.from('suppliers').insert({ name: buscaFornecedor.trim() }).select().single()
+    const { data, error } = await supabase.from('suppliers').insert({ name: buscaFornecedor.trim() }).select().single()
     if (data) {
       setFormConta(f => ({ ...f, supplier_id: data.id, supplier_name: data.name }))
       setMostrarFornecedores(false)
+      setBuscaFornecedor(data.name)
+    } else {
+      alert('Erro ao criar fornecedor: ' + error?.message)
     }
+  }
+
+  function selecionarFornecedor(f) {
+    setFormConta(fc => ({ ...fc, supplier_id: f.id, supplier_name: f.name }))
+    setBuscaFornecedor(f.name)
+    setMostrarFornecedores(false)
+  }
+
+  // Gerar próximas parcelas para recorrência
+  function gerarDatasRecorrencia(dataBase, recorrencia, qtd = 12) {
+    const datas = []
+    const [y, m, d] = dataBase.split('-').map(Number)
+    const mesesPorPeriodo = { mensal: 1, bimestral: 2, trimestral: 3, semestral: 6, anual: 12 }
+    const intervalo = mesesPorPeriodo[recorrencia] || 1
+    for (let i = 1; i <= qtd; i++) {
+      const novaData = new Date(y, m - 1 + i * intervalo, d)
+      const str = `${novaData.getFullYear()}-${String(novaData.getMonth()+1).padStart(2,'0')}-${String(novaData.getDate()).padStart(2,'0')}`
+      datas.push(str)
+    }
+    return datas
   }
 
   async function salvarConta() {
@@ -175,10 +215,18 @@ export default function Pagar() {
       category: formConta.category || null,
       supplier_id: formConta.supplier_id || null,
       supplier_name: formConta.supplier_name || buscaFornecedor || null,
+      recorrencia: formConta.recorrencia || null,
       status: 'em_aberto',
     }
     if (modalConta === 'novo') {
       await supabase.from('payables').insert(payload)
+      // Se tiver recorrência, gera as próximas parcelas
+      if (formConta.recorrencia && formConta.due_date) {
+        const proximas = gerarDatasRecorrencia(formConta.due_date, formConta.recorrencia)
+        for (const data of proximas) {
+          await supabase.from('payables').insert({ ...payload, due_date: data })
+        }
+      }
     } else {
       await supabase.from('payables').update(payload).eq('id', modalConta.id)
     }
@@ -194,17 +242,25 @@ export default function Pagar() {
   }
 
   function adicionarCategoria() {
-    if (!novaCat.trim() || categorias.includes(novaCat.trim())) return
-    const novas = [...categorias, novaCat.trim()]
+    const cat = novaCat.trim()
+    if (!cat || categorias.includes(cat)) return
+    const novas = [...categorias, cat]
     setCategorias(novas)
-    salvarCats(novas)
+    salvarCatsLS(novas)
     setNovaCat('')
   }
 
   function removerCategoria(cat) {
+    if (CATS_PADRAO.includes(cat)) return
     const novas = categorias.filter(c => c !== cat)
     setCategorias(novas)
-    salvarCats(novas)
+    salvarCatsLS(novas)
+  }
+
+  const STATUS_STYLE = {
+    em_aberto: { label: 'Em aberto', bg: 'bg-blue-100',  text: 'text-blue-700'  },
+    vencido:   { label: 'Vencido',   bg: 'bg-red-100',   text: 'text-red-700'   },
+    pago:      { label: 'Pago',      bg: 'bg-green-100', text: 'text-green-700' },
   }
 
   return (
@@ -212,11 +268,11 @@ export default function Pagar() {
 
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-4 pt-4 pb-4 sticky top-0 z-10">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <h1 className="text-lg font-bold text-navy">Contas a Pagar</h1>
           <button onClick={abrirNova}
             className="flex items-center gap-1.5 bg-primary text-white px-3 py-2 rounded-xl text-sm font-semibold">
-            <Plus size={15} /> Nova
+            <Plus size={15}/> Nova
           </button>
         </div>
         <div className="flex items-center gap-2 mb-3">
@@ -224,10 +280,23 @@ export default function Pagar() {
           <div className="flex-1 text-center text-sm font-semibold text-navy capitalize">{nomeMes(mesRef)}</div>
           <button onClick={() => mudarMes(1)} className="p-2 rounded-lg bg-gray-100"><ChevronRight size={16} className="text-gray-600"/></button>
         </div>
-        <div className="relative">
+        <div className="relative mb-3">
           <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Pesquisar..."
             className="w-full bg-gray-100 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none"/>
           <Search size={15} className="absolute left-3 top-3 text-gray-400"/>
+        </div>
+        {/* Filtro por categoria */}
+        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          <button onClick={() => setFiltroCategoria(null)}
+            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition ${!filtroCategoria ? 'bg-navy text-white' : 'bg-gray-100 text-gray-600'}`}>
+            Todas
+          </button>
+          {categorias.map(cat => (
+            <button key={cat} onClick={() => setFiltroCategoria(filtroCategoria === cat ? null : cat)}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition ${filtroCategoria === cat ? 'bg-navy text-white' : 'bg-gray-100 text-gray-600'}`}>
+              {cat}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -269,9 +338,10 @@ export default function Pagar() {
                 <div className={`w-1 self-stretch rounded-full flex-shrink-0 ${stNorm(c)==='vencido'?'bg-red-400':stNorm(c)==='pago'?'bg-green-400':'bg-blue-400'}`}/>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900 truncate">{c.description||'—'}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                     {c.category && <span className="text-xs text-gray-400">{c.category}</span>}
                     {c.supplier_name && <span className="text-xs text-blue-500">{c.supplier_name}</span>}
+                    {c.recorrencia && <span className="text-xs text-purple-500 flex items-center gap-0.5"><RefreshCw size={9}/>{c.recorrencia}</span>}
                   </div>
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-xs text-gray-400">Venc: {fmtData(c.due_date)}</span>
@@ -350,7 +420,7 @@ export default function Pagar() {
             </div>
             <button onClick={confirmarPagamento} disabled={salvandoPagar}
               className="w-full bg-green-600 text-white rounded-2xl py-4 font-bold text-base disabled:opacity-60 flex items-center justify-center gap-2">
-              <CheckCircle size={20}/>{salvandoPagar ? 'Salvando...' : 'Confirmar Pagamento'}
+              <CheckCircle size={20}/>{salvandoPagar?'Salvando...':'Confirmar Pagamento'}
             </button>
           </div>
         </div>
@@ -359,92 +429,129 @@ export default function Pagar() {
       {/* MODAL: Nova/Editar */}
       {modalConta && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
-          <div className="bg-white w-full rounded-t-3xl p-5 space-y-4 max-h-[92vh] overflow-y-auto" style={{paddingBottom:'max(24px,env(safe-area-inset-bottom))'}}>
-            <div className="flex items-center justify-between">
+          <div className="bg-white w-full rounded-t-3xl max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100 flex-shrink-0">
               <h3 className="text-base font-bold text-navy">{modalConta==='novo'?'Nova Conta a Pagar':'Editar Conta'}</h3>
               <button onClick={() => setModalConta(null)}><X size={20} className="text-gray-400"/></button>
             </div>
 
-            <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Descrição *</label>
-              <input value={formConta.description} onChange={e => setFormConta(f=>({...f,description:e.target.value}))}
-                placeholder="Ex: Conta de luz"
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
-            </div>
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
 
-            <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Valor *</label>
-              <input type="number" value={formConta.amount} onChange={e => setFormConta(f=>({...f,amount:e.target.value}))}
-                placeholder="0,00" step="0.01"
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
-            </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Descrição *</label>
+                <input value={formConta.description} onChange={e => setFormConta(f=>({...f,description:e.target.value}))}
+                  placeholder="Ex: Conta de luz"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
+              </div>
 
-            <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Vencimento</label>
-              <input type="date" value={formConta.due_date} onChange={e => setFormConta(f=>({...f,due_date:e.target.value}))}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
-            </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-gray-500 mb-1 block">Valor *</label>
+                  <input type="number" value={formConta.amount} onChange={e => setFormConta(f=>({...f,amount:e.target.value}))}
+                    placeholder="0,00" step="0.01"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500 mb-1 block">Vencimento</label>
+                  <input type="date" value={formConta.due_date} onChange={e => setFormConta(f=>({...f,due_date:e.target.value}))}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
+                </div>
+              </div>
 
-            {/* Fornecedor */}
-            <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Fornecedor</label>
-              <div className="relative">
-                <input value={buscaFornecedor} onChange={e => { setBuscaFornecedor(e.target.value); setFormConta(f=>({...f,supplier_id:''})) }}
-                  placeholder="Buscar ou criar fornecedor..."
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary pr-10"/>
-                <User size={15} className="absolute right-3 top-3 text-gray-400"/>
-                {buscaFornecedor.length >= 2 && (
-                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-xl mt-1 shadow-lg z-10 overflow-hidden">
-                    {fornecedores.map(f => (
-                      <button key={f.id} onClick={() => { setFormConta(fc=>({...fc,supplier_id:f.id,supplier_name:f.name})); setBuscaFornecedor(f.name); setMostrarFornecedores(false) }}
-                        className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 border-b border-gray-50 last:border-0">{f.name}</button>
-                    ))}
-                    <button onClick={criarFornecedor}
-                      className="w-full px-4 py-3 text-left text-sm text-primary font-semibold hover:bg-blue-50 flex items-center gap-2">
-                      <Plus size={14}/> Criar "{buscaFornecedor}"
+              {/* Recorrência */}
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-2 block">Recorrente?</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {RECORRENCIAS.map(r => (
+                    <button key={String(r.value)} onClick={() => setFormConta(f=>({...f,recorrencia:r.value}))}
+                      className={`py-2 px-1 rounded-xl text-xs font-medium border transition text-center flex items-center justify-center gap-1 ${formConta.recorrencia===r.value?'bg-navy text-white border-navy':'bg-white text-gray-600 border-gray-200'}`}>
+                      {r.value && <RefreshCw size={10}/>}{r.label}
                     </button>
-                  </div>
+                  ))}
+                </div>
+                {formConta.recorrencia && (
+                  <p className="text-xs text-purple-600 mt-1.5">
+                    Serão criadas automaticamente as próximas 12 parcelas {formConta.recorrencia}s a partir do vencimento informado.
+                  </p>
                 )}
               </div>
-              {formConta.supplier_id && <p className="text-xs text-green-600 mt-1">✓ {formConta.supplier_name || buscaFornecedor}</p>}
+
+              {/* Fornecedor */}
+              <div ref={fornecedorRef}>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Fornecedor</label>
+                <div className="relative">
+                  <input value={buscaFornecedor}
+                    onChange={e => { setBuscaFornecedor(e.target.value); setFormConta(f=>({...f,supplier_id:'',supplier_name:''})) }}
+                    onFocus={() => buscaFornecedor.length >= 2 && setMostrarFornecedores(true)}
+                    placeholder="Buscar ou criar fornecedor..."
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary pr-10"/>
+                  <User size={15} className="absolute right-3 top-3 text-gray-400"/>
+                  {mostrarFornecedores && (
+                    <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-xl mt-1 shadow-lg z-20 overflow-hidden">
+                      {fornecedores.map(f => (
+                        <button key={f.id} onClick={() => selecionarFornecedor(f)}
+                          className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 border-b border-gray-50 last:border-0">
+                          {f.name}
+                        </button>
+                      ))}
+                      {buscaFornecedor.trim() && (
+                        <button onClick={criarFornecedor}
+                          className="w-full px-4 py-3 text-left text-sm text-primary font-semibold hover:bg-blue-50 flex items-center gap-2">
+                          <Plus size={14}/> Criar "{buscaFornecedor}"
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {formConta.supplier_id && (
+                  <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                    <CheckCircle size={11}/> {formConta.supplier_name || buscaFornecedor}
+                  </p>
+                )}
+              </div>
+
+              {/* Categoria */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-medium text-gray-500">Categoria</label>
+                  <button onClick={() => setModalCats(true)} className="text-xs text-primary font-semibold">+ Gerenciar</button>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {categorias.map(cat => (
+                    <button key={cat} onClick={() => setFormConta(f=>({...f,category:cat===formConta.category?'':cat}))}
+                      className={`py-2 px-1 rounded-xl text-xs font-medium border transition text-center ${formConta.category===cat?'bg-navy text-white border-navy':'bg-white text-gray-600 border-gray-200'}`}>
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
             </div>
 
-            {/* Categoria */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-medium text-gray-500">Categoria</label>
-                <button onClick={() => setModalCats(true)} className="text-xs text-primary font-semibold">Gerenciar</button>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                {categorias.map(cat => (
-                  <button key={cat} onClick={() => setFormConta(f=>({...f,category:cat===formConta.category?'':cat}))}
-                    className={`py-2 px-1 rounded-xl text-xs font-medium border transition text-center ${formConta.category===cat?'bg-navy text-white border-navy':'bg-white text-gray-600 border-gray-200'}`}>{cat}</button>
-                ))}
-              </div>
+            <div className="px-5 py-4 border-t border-gray-100 flex-shrink-0" style={{paddingBottom:'max(16px,env(safe-area-inset-bottom))'}}>
+              <button onClick={salvarConta} disabled={salvandoConta}
+                className="w-full bg-primary text-white rounded-2xl py-4 font-bold disabled:opacity-60 flex items-center justify-center gap-2">
+                <Save size={18}/>{salvandoConta?'Salvando...':modalConta==='novo'?'Criar Conta':'Salvar'}
+              </button>
             </div>
-
-            <button onClick={salvarConta} disabled={salvandoConta}
-              className="w-full bg-primary text-white rounded-2xl py-4 font-bold disabled:opacity-60 flex items-center justify-center gap-2">
-              <Save size={18}/>{salvandoConta?'Salvando...':modalConta==='novo'?'Criar Conta':'Salvar'}
-            </button>
           </div>
         </div>
       )}
 
       {/* MODAL: Gerenciar categorias */}
       {modalCats && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
-          <div className="bg-white w-full rounded-t-3xl p-5 space-y-4 max-h-[80vh] overflow-y-auto" style={{paddingBottom:'max(24px,env(safe-area-inset-bottom))'}}>
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-end">
+          <div className="bg-white w-full rounded-t-3xl p-5 space-y-4 max-h-[70vh] overflow-y-auto" style={{paddingBottom:'max(24px,env(safe-area-inset-bottom))'}}>
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-navy">Categorias</h3>
+              <h3 className="text-base font-bold text-navy">Gerenciar Categorias</h3>
               <button onClick={() => setModalCats(false)}><X size={20} className="text-gray-400"/></button>
             </div>
             <div className="flex gap-2">
               <input value={novaCat} onChange={e => setNovaCat(e.target.value)}
                 placeholder="Nova categoria..."
-                onKeyDown={e => e.key === 'Enter' && adicionarCategoria()}
+                onKeyDown={e => e.key==='Enter' && adicionarCategoria()}
                 className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
-              <button onClick={adicionarCategoria} className="bg-primary text-white px-4 rounded-xl text-sm font-semibold">
+              <button onClick={adicionarCategoria} className="bg-primary text-white px-4 rounded-xl font-semibold">
                 <Plus size={16}/>
               </button>
             </div>
@@ -452,10 +559,12 @@ export default function Pagar() {
               {categorias.map(cat => (
                 <div key={cat} className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
                   <span className="text-sm text-gray-800">{cat}</span>
-                  {!CATEGORIAS_PADRAO.includes(cat) && (
+                  {!CATS_PADRAO.includes(cat) ? (
                     <button onClick={() => removerCategoria(cat)} className="p-1 rounded-lg bg-red-50">
                       <Trash2 size={14} className="text-red-500"/>
                     </button>
+                  ) : (
+                    <span className="text-xs text-gray-300">padrão</span>
                   )}
                 </div>
               ))}
@@ -463,7 +572,6 @@ export default function Pagar() {
           </div>
         </div>
       )}
-
     </div>
   )
 }
