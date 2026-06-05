@@ -57,6 +57,7 @@ export default function OrcamentoDetalhe() {
     await supabase.from('quotes').update({ warranty_text: garantia }).eq('id', id)
     setEditGarantia(false); carregar()
   }
+  async function salvarValores() {
     const val = parseFloat(String(mao).replace(',','.')) || 0
     const { data: pecasAtuais } = await supabase
       .from('quote_parts').select('quantity, unit_price').eq('quote_id', id)
