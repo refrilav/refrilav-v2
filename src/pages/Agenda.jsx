@@ -161,71 +161,79 @@ export default function Agenda() {
         </div>
       </div>
 
-      {/* Grade horária */}
+      {/* Grade horária com posicionamento proporcional — 1min = 1px, 1h = 60px */}
       <div className="flex-1 overflow-y-auto">
-        {HORARIOS.map(h => {
-          // Mostra atendimentos cujo horário cai dentro deste slot de 30min
-          const [sh, sm] = h.split(':').map(Number)
-          const slotMin = sh * 60 + sm
-          const items = servicos.filter(s => {
-            const hhmm = getHHMM(s.scheduled_at)
-            if (!hhmm) return false
-            const [ah, am] = hhmm.split(':').map(Number)
-            const atMin = ah * 60 + am
-            return atMin >= slotMin && atMin < slotMin + 30
-          })
-          const isHH = h.endsWith(':00')
-          // Distribui em colunas se houver mais de um
-          const colunas = distribuirEmColunas(items)
-          const numCols = colunas.length
+        <div className="relative" style={{paddingLeft:'56px', height: HORARIOS.length * 30 + 80}}>
 
-          return (
-            <div key={h}
-              className={`flex border-b ${isHH ? 'border-gray-200' : 'border-gray-50'} min-h-[40px]`}
-              onClick={() => { setHorarioPreSelecionado(`${dStr}T${h}`); setModalAberto(true) }}>
-              {/* Hora */}
-              <div className="w-14 flex-shrink-0 flex items-start justify-end pr-2 pt-1">
-                <span className={`text-xs ${isHH ? 'text-gray-500' : 'text-gray-300'}`}>{h}</span>
+          {/* Linhas e labels de hora */}
+          {HORARIOS.map((h, idx) => {
+            const isHH = h.endsWith(':00')
+            return (
+              <div key={h} style={{position:'absolute', top: idx*30, left:0, right:0, height:30, pointerEvents:'none', zIndex:1}}>
+                <div style={{position:'absolute', left:0, width:52, top:0, display:'flex', alignItems:'flex-start', justifyContent:'flex-end', paddingRight:6, paddingTop:2}}>
+                  <span style={{fontSize:11, color: isHH ? '#6b7280' : '#d1d5db'}}>{h}</span>
+                </div>
+                <div style={{position:'absolute', left:52, right:0, top:0, height:1, background: isHH ? '#e5e7eb' : '#f9fafb'}}/>
               </div>
-              {/* Eventos lado a lado */}
-              <div className="flex-1 py-0.5 pr-2">
-                {items.length > 0 && (
-                  <div style={{display:'flex', gap:'4px'}}>
-                    {items.map(s => {
-                      const cor = STATUS_CORES[s.status] || STATUS_CORES.agendado
-                      return (
-                        <div key={s.id}
-                          onClick={e => { e.stopPropagation(); navigate(`/m/atendimento/${s.id}`) }}
-                          style={{
-                            flex: 1,
-                            background: cor.bg,
-                            color: cor.text,
-                            border: `1px solid ${cor.border}`,
-                            borderRadius: '8px',
-                            padding: '6px 8px',
-                            fontSize: '12px',
-                            fontWeight: '500',
-                            cursor: 'pointer',
-                            minWidth: 0,
-                          }}>
-                          <div style={{fontWeight:'600', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
-                            {s.clients?.name || 'Cliente'}
-                          </div>
-                          {(s.equipment || s.brand) && (
-                            <div style={{opacity:0.75, fontSize:'11px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
-                              {[s.equipment, s.brand, s.model].filter(Boolean).join(' ')}
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
+            )
+          })}
+
+          {/* Área clicável por slot */}
+          {HORARIOS.map((h, idx) => (
+            <div key={'click-'+h}
+              style={{position:'absolute', top: idx*30, left:52, right:0, height:30, zIndex:2, cursor:'pointer'}}
+              onClick={() => { setHorarioPreSelecionado(`${dStr}T${h}`); setModalAberto(true) }}
+            />
+          ))}
+
+          {/* Atendimentos posicionados com altura proporcional */}
+          {servicos.map(s => {
+            const hhmm = getHHMM(s.scheduled_at)
+            if (!hhmm) return null
+            const [ah, am] = hhmm.split(':').map(Number)
+            const inicioMin = ah * 60 + am
+            const GRADE_INICIO = 7 * 60 // começa às 07:00
+
+            let duracaoMin = 60
+            if (s.scheduled_end) {
+              const fimHHMM = getHHMM(s.scheduled_end)
+              if (fimHHMM) {
+                const [fh, fm] = fimHHMM.split(':').map(Number)
+                duracaoMin = Math.max(30, (fh * 60 + fm) - inicioMin)
+              }
+            }
+
+            const topPx = ((inicioMin - GRADE_INICIO) / 30) * 30 + 1
+            const heightPx = Math.max(26, (duracaoMin / 30) * 30 - 2)
+            const cor = STATUS_CORES[s.status] || STATUS_CORES.agendado
+
+            return (
+              <div key={s.id}
+                onClick={e => { e.stopPropagation(); navigate(`/m/atendimento/${s.id}`) }}
+                style={{
+                  position:'absolute', top: topPx, left:56, right:6, height: heightPx,
+                  background: cor.bg, color: cor.text, border: `1px solid ${cor.border}`,
+                  borderRadius:8, padding:'4px 8px', cursor:'pointer', zIndex:3,
+                  overflow:'hidden', boxSizing:'border-box',
+                }}>
+                <div style={{fontSize:12, fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+                  {s.clients?.name || 'Cliente'}
+                </div>
+                {duracaoMin >= 45 && (s.equipment || s.brand) && (
+                  <div style={{fontSize:11, opacity:0.75, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+                    {[s.equipment, s.brand, s.model].filter(Boolean).join(' ')}
+                  </div>
+                )}
+                {duracaoMin >= 60 && (
+                  <div style={{fontSize:10, opacity:0.6, marginTop:2}}>
+                    {hhmm}{s.scheduled_end ? ` – ${getHHMM(s.scheduled_end)}` : ''}
                   </div>
                 )}
               </div>
-            </div>
-          )
-        })}
-        <div style={{height:'80px'}} />
+            )
+          })}
+
+        </div>
       </div>
 
       {/* Botão Hoje */}
