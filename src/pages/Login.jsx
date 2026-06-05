@@ -28,14 +28,8 @@ export default function Login() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-4">
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-              <path d="M16 4C9.37 4 4 9.37 4 16s5.37 12 12 12 12-5.37 12-12S22.63 4 16 4z" fill="white" fillOpacity="0.2"/>
-              <path d="M16 8v8l5 3" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <circle cx="16" cy="16" r="2" fill="white"/>
-            </svg>
-          </div>
-          <h1 className="text-white text-2xl font-bold">Refrilav</h1>
+          <img src="/logo.png" alt="Refrilav" className="h-20 object-contain mx-auto mb-2"
+            onError={e => { e.target.style.display='none' }}/>
           <p className="text-blue-200 text-sm mt-1">Sistema de Gestão</p>
         </div>
 

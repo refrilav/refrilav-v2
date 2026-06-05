@@ -127,9 +127,8 @@ export default function Recibo() {
 
           {/* Cabeçalho empresa */}
           <div className="print-card bg-white rounded-2xl p-6 shadow-sm mb-4 text-center">
-            <div className="w-14 h-14 bg-red-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <span className="text-white font-bold text-xl">R</span>
-            </div>
+            <img src="/logo.png" alt="Refrilav" className="h-14 object-contain mx-auto mb-3"
+              onError={e => { e.target.style.display='none' }}/>
             <h1 className="text-lg font-bold text-gray-900">{nomeEmpresa}</h1>
             {telefoneEmpresa && <p className="text-sm text-gray-500 mt-0.5">{telefoneEmpresa}</p>}
             {enderecoEmpresa && <p className="text-xs text-gray-400 mt-0.5">{enderecoEmpresa}</p>}

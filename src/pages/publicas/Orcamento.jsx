@@ -112,7 +112,9 @@ export default function Orcamento() {
 
           {/* Cabeçalho */}
           <div style={{...card, textAlign:'center'}}>
-            <div style={{width:56,height:56,background:'#D72638',borderRadius:14,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 12px'}}>
+            <img src="/logo.png" alt="Refrilav" style={{height:56, objectFit:'contain', margin:'0 auto 12px', display:'block'}}
+              onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }}/>
+            <div style={{width:56,height:56,background:'#D72638',borderRadius:14,display:'none',alignItems:'center',justifyContent:'center',margin:'0 auto 12px'}}>
               <span style={{color:'white',fontWeight:700,fontSize:20}}>R</span>
             </div>
             <h1 style={{margin:'0 0 4px',fontSize:18,fontWeight:700,color:'#1B2A4A'}}>{nomeEmpresa}</h1>
@@ -177,6 +179,14 @@ export default function Orcamento() {
               </div>
             )}
           </div>
+
+          {/* Garantia — só aparece se preenchida */}
+          {dados.warranty_text && (
+            <div style={card}>
+              <p style={label}>Garantia</p>
+              <p style={{margin:0, fontSize:13, color:'#374151', lineHeight:1.6}}>{dados.warranty_text}</p>
+            </div>
+          )}
 
           {/* Status aprovado/recusado */}
           {resposta === 'aprovado' && (

@@ -17,7 +17,8 @@ export default function OrcamentoDetalhe() {
   const [loading, setLoading] = useState(true)
   const [salvando, setSalvando] = useState(false)
 
-  const [editDiag, setEditDiag] = useState(false)
+  const [editGarantia, setEditGarantia] = useState(false)
+  const [garantia, setGarantia] = useState('')
   const [diag, setDiag] = useState('')
   const [editDesc, setEditDesc] = useState(false)
   const [desc, setDesc] = useState('')
@@ -40,6 +41,7 @@ export default function OrcamentoDetalhe() {
     setDiag(o?.diagnosis || '')
     setDesc(o?.services_description || '')
     setMao(o?.labor_price || '')
+    setGarantia(o?.warranty_text || '')
     setLoading(false)
   }
 
@@ -51,7 +53,10 @@ export default function OrcamentoDetalhe() {
     await supabase.from('quotes').update({ services_description: desc }).eq('id', id)
     setEditDesc(false); carregar()
   }
-  async function salvarValores() {
+  async function salvarGarantia() {
+    await supabase.from('quotes').update({ warranty_text: garantia }).eq('id', id)
+    setEditGarantia(false); carregar()
+  }
     const val = parseFloat(String(mao).replace(',','.')) || 0
     const { data: pecasAtuais } = await supabase
       .from('quote_parts').select('quantity, unit_price').eq('quote_id', id)
@@ -249,6 +254,31 @@ export default function OrcamentoDetalhe() {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Garantia */}
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Garantia</span>
+              {podeEditar && !editGarantia && <button onClick={()=>setEditGarantia(true)} className="p-1.5 rounded-lg bg-gray-100"><Edit2 size={14} className="text-gray-500"/></button>}
+            </div>
+            <div className="px-4 py-3">
+              {editGarantia ? (
+                <div className="space-y-2">
+                  <textarea value={garantia} onChange={e=>setGarantia(e.target.value)} rows={3}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary resize-none"
+                    placeholder="Ex: 90 dias nas peças substituídas e 30 dias na mão de obra" autoFocus/>
+                  <div className="flex gap-2">
+                    <button onClick={salvarGarantia} className="flex-1 bg-primary text-white rounded-xl py-2.5 text-sm font-semibold">Salvar</button>
+                    <button onClick={()=>setEditGarantia(false)} className="px-4 bg-gray-100 text-gray-600 rounded-xl py-2.5 text-sm">Cancelar</button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-700">
+                  {orc.warranty_text || <span className="text-gray-300 italic">Sem garantia — não aparecerá no orçamento</span>}
+                </p>
+              )}
+            </div>
           </div>
 
         </div>
