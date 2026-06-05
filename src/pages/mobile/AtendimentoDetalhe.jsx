@@ -108,6 +108,19 @@ export default function AtendimentoDetalhe() {
     const now = new Date()
     const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}T${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
     await supabase.from('services').update({ status: 'concluido', finished_at: ts }).eq('id', id)
+
+    // Descontar peças do estoque
+    const { data: pecasUsadas } = await supabase.from('service_parts').select('stock_item_id, quantity, name').eq('service_id', id)
+    for (const p of (pecasUsadas || [])) {
+      if (!p.stock_item_id) continue
+      const { data: estoque } = await supabase.from('stock_items').select('quantity').eq('id', p.stock_item_id).single()
+      if (estoque) {
+        const novaQty = Math.max(0, (estoque.quantity || 0) - p.quantity)
+        await supabase.from('stock_items').update({ quantity: novaQty }).eq('id', p.stock_item_id)
+        await supabase.from('stock_movements').insert({ stock_item_id: p.stock_item_id, type: 'saida', quantity: p.quantity, reference: `Atendimento - ${servico.clients?.name||''}` })
+      }
+    }
+
     if (servico?.total_price > 0) {
       const { error } = await supabase.from('receivables').insert({
         service_id: id,
@@ -146,14 +159,13 @@ export default function AtendimentoDetalhe() {
   async function salvarPeca() {
     if (!novaPeca.description) return
     const preco = parseFloat(String(novaPeca.unit_price).replace(',','.')) || 0
-    // Insere a peça
     await supabase.from('service_parts').insert({
       service_id: id,
       name: novaPeca.description,
       quantity: novaPeca.quantity,
       unit_price: preco,
+      stock_item_id: novaPeca.stock_item_id || null,
     })
-    // Busca TODAS as peças do banco após inserir para ter o total correto
     const { data: pecasAtuais } = await supabase
       .from('service_parts').select('quantity, unit_price').eq('service_id', id)
     const totalPecas = (pecasAtuais || []).reduce((s,p) => s+(p.quantity*p.unit_price), 0)
@@ -337,10 +349,39 @@ export default function AtendimentoDetalhe() {
           </div>
           {addPeca && (
             <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 space-y-2">
-              <input value={novaPeca.description} onChange={e=>setNovaPeca(p=>({...p,description:e.target.value}))} placeholder="Nome da peça" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white" autoFocus/>
+              <div className="relative">
+                <input value={novaPeca.description}
+                  onChange={async e => {
+                    const val = e.target.value
+                    setNovaPeca(p=>({...p, description:val, stock_item_id:'', _sugestoes:[]}))
+                    if (val.length >= 2) {
+                      const { data } = await supabase.from('stock_items')
+                        .select('id,name,cost_price,quantity,unit')
+                        .ilike('name', `%${val}%`).range(0,9)
+                      setNovaPeca(p=>({...p, _sugestoes: data||[]}))
+                    }
+                  }}
+                  placeholder="Buscar no estoque ou digitar nome"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:border-primary" autoFocus/>
+                {(novaPeca._sugestoes||[]).length > 0 && (
+                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-xl mt-1 shadow-lg z-10 overflow-hidden">
+                    {novaPeca._sugestoes.map(s => (
+                      <button key={s.id}
+                        onClick={() => setNovaPeca(p=>({...p, description:s.name, unit_price: s.cost_price||0, stock_item_id:s.id, _sugestoes:[], _estoque_qty: s.quantity}))}
+                        className="w-full px-3 py-2.5 text-left hover:bg-gray-50 border-b border-gray-50 last:border-0">
+                        <p className="text-sm font-medium">{s.name}</p>
+                        <p className="text-xs text-gray-400">Estoque: {s.quantity} {s.unit||'un'} · {fmt(s.cost_price)}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {novaPeca.stock_item_id && <p className="text-xs text-green-600">✓ Do estoque — {novaPeca._estoque_qty} disponíveis</p>}
               <div className="grid grid-cols-2 gap-2">
-                <input type="number" value={novaPeca.quantity} onChange={e=>setNovaPeca(p=>({...p,quantity:parseInt(e.target.value)||1}))} placeholder="Qtd" className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white"/>
-                <input type="number" value={novaPeca.unit_price} onChange={e=>setNovaPeca(p=>({...p,unit_price:e.target.value}))} placeholder="Valor unitário" step="0.01" className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white"/>
+                <input type="number" value={novaPeca.quantity} onChange={e=>setNovaPeca(p=>({...p,quantity:parseInt(e.target.value)||1}))}
+                  placeholder="Qtd" min={1} className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white"/>
+                <input type="number" value={novaPeca.unit_price} onChange={e=>setNovaPeca(p=>({...p,unit_price:e.target.value}))}
+                  placeholder="Valor unitário" step="0.01" className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white"/>
               </div>
               <div className="flex gap-2">
                 <button onClick={salvarPeca} className="flex-1 bg-primary text-white rounded-xl py-2.5 text-sm font-semibold">Adicionar</button>

@@ -2,7 +2,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import {
   LayoutDashboard, Users, Wrench, FileText, Calendar, ClipboardList,
-  LogOut, Settings, ChevronLeft, ChevronRight, Menu, X, TrendingUp, TrendingDown
+  LogOut, Settings, ChevronLeft, ChevronRight, Menu, X, TrendingUp, TrendingDown, Package, ShoppingCart
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -13,6 +13,8 @@ const navItems = [
   { path: '/orcamentos',    label: 'Orçamentos',     icon: FileText },
   { path: '/receber',       label: 'A Receber',      icon: TrendingUp },
   { path: '/pagar',         label: 'A Pagar',        icon: TrendingDown },
+  { path: '/estoque',       label: 'Estoque',        icon: Package      },
+  { path: '/compras',       label: 'Compras',        icon: ShoppingCart },
   { path: '/clientes',      label: 'Clientes',       icon: Users },
   { path: '/dashboard',     label: 'Dashboard',      icon: LayoutDashboard },
 ]
