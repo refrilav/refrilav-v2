@@ -12,6 +12,7 @@ import Receber from './pages/Receber'
 import Pagar from './pages/Pagar'
 import Estoque from './pages/Estoque'
 import Compras from './pages/Compras'
+import CompraDetalhe from './pages/CompraDetalhe'
 import ComprasConciliacao from './pages/ComprasConciliacao'
 import ComprasConferencia from './pages/ComprasConferencia'
 import AtendimentoDetalhe from './pages/mobile/AtendimentoDetalhe'
@@ -48,6 +49,7 @@ function AppRoutes() {
         <Route path="compras" element={<Compras />} />
         <Route path="compras/conciliacao" element={<ComprasConciliacao />} />
         <Route path="compras/conferencia" element={<ComprasConferencia />} />
+        <Route path="compras/:id" element={<CompraDetalhe />} />
         <Route path="clientes" element={<Clientes />} />
         <Route path="dashboard" element={<Dashboard />} />
       </Route>

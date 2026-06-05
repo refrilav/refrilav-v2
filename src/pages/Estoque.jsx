@@ -144,7 +144,7 @@ export default function Estoque() {
                 <Package size={18} className={(item.quantity||0) <= 0 ? 'text-red-500' : 'text-green-600'}/>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">{item.name}</p>
+                <p className="text-sm font-semibold text-gray-900 truncate">{item.name || item.description}</p>
                 <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                   {item.code && <span className="text-xs text-gray-400">#{item.code}</span>}
                   {item.brand && <span className="text-xs text-gray-400">{item.brand}</span>}
