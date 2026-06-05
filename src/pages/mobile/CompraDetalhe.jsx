@@ -28,6 +28,8 @@ export default function CompraDetalhe() {
     await supabase.from('purchases').delete().eq('id', id)
     navigate('/compras')
   }
+
+  async function carregar() {
     setLoading(true)
     const { data: c } = await supabase.from('purchases').select('*').eq('id', id).single()
     const { data: i } = await supabase.from('purchase_items').select('*').eq('purchase_id', id).range(0, 9999)
