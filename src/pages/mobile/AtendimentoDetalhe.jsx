@@ -209,7 +209,7 @@ export default function AtendimentoDetalhe() {
       <MobileHeader
         titulo={cli.name || '—'}
         subtitulo={[servico.equipment,servico.brand,servico.model].filter(Boolean).join(' · ')}
-        voltarPara="/atendimentos"
+        voltarPara={null}
         acoes={
           <button
             onClick={excluir}
