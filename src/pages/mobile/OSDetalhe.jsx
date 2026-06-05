@@ -81,6 +81,24 @@ export default function OSDetalhe() {
     setLoading(false)
   }
 
+  async function excluirOS() {
+    if (!window.confirm('Excluir esta OS? Esta ação não pode ser desfeita.')) return
+    setSalvando(true)
+    try {
+      await supabase.from('service_parts').delete().eq('workshop_order_id', id)
+      await supabase.from('receivables').delete().eq('workshop_order_id', id)
+      // Desvincula o atendimento original se houver
+      if (os.service_id) {
+        await supabase.from('services').update({ workshop_order_id: null, status: 'agendado' }).eq('id', os.service_id)
+      }
+      await supabase.from('workshop_orders').delete().eq('id', id)
+      navigate('/oficina')
+    } catch (e) {
+      alert('Erro ao excluir: ' + e.message)
+    }
+    setSalvando(false)
+  }
+
   async function avancarEtapa() {
     const proxima = PROXIMA_ETAPA[os.etapa]
     if (!proxima) return
@@ -179,6 +197,12 @@ export default function OSDetalhe() {
       <MobileHeader
         titulo={cliente.name || '—'}
         subtitulo={[os.equipment, os.brand, os.model].filter(Boolean).join(' · ')}
+        voltarPara="/oficina"
+        acoes={
+          <button onClick={excluirOS} className="flex items-center justify-center w-8 h-8 bg-white/10 rounded-full">
+            <Trash2 size={15} className="text-red-300" />
+          </button>
+        }
         status={
           <span className={`${etapaAtual.cor} text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5`}>
             <span className={`w-1.5 h-1.5 rounded-full ${etapaAtual.dot}`} />
