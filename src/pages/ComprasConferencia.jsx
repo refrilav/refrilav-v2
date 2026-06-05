@@ -53,7 +53,7 @@ export default function ComprasConferencia() {
       }
 
       // 2. Criar a compra
-      const { data: compra } = await supabase.from('purchases').insert({
+      const { data: compra, error: errCompra } = await supabase.from('purchases').insert({
         supplier_id: supplierId,
         supplier_name: nfeData.fornecedorNome,
         nfe_key: nfeData.chave,
@@ -62,6 +62,7 @@ export default function ComprasConferencia() {
         purchase_date: nfeData.dataEmissao || hoje(),
         status: 'confirmada',
       }).select().single()
+      if (errCompra) throw new Error('Erro ao criar compra: ' + errCompra.message)
 
       // 3. Para cada item — criar produto novo ou atualizar existente
       for (let idx = 0; idx < itensAtivos.length; idx++) {
@@ -71,7 +72,7 @@ export default function ComprasConferencia() {
 
         if (item.modo === 'novo') {
           const sale = parseFloat(String(precoVenda[idx] || '0').replace(',','.')) || null
-          const { data: novoItem } = await supabase.from('stock_items').insert({
+          const { data: novoItem, error: errItem } = await supabase.from('stock_items').insert({
             name: prod.name,
             code: prod.code || null,
             unit: prod.unit || 'un',
@@ -79,6 +80,7 @@ export default function ComprasConferencia() {
             sale_price: sale,
             quantity: prod.quantity,
           }).select().single()
+          if (errItem) throw new Error(`Erro ao criar item ${prod.name}: ${errItem.message}`)
           stockItemId = novoItem?.id
 
           if (stockItemId) {
