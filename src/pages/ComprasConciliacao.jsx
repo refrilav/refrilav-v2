@@ -25,22 +25,44 @@ export default function ComprasConciliacao() {
   }, [])
 
   async function carregar() {
-    const { data } = await supabase.from('stock_items').select('id, name, code, brand, quantity').order('name').range(0, 9999)
-    setEstoqueItens(data || [])
+    try {
+      const { data, error } = await supabase
+        .from('stock_items')
+        .select('id, name, code, brand, quantity')
+        .order('name')
+        .range(0, 9999)
 
-    // Tenta auto-conciliar por código ou nome similar
-    const conc = nfeData.produtos.map(prod => {
-      const porCodigo = (data||[]).find(s => s.code && s.code.toLowerCase() === prod.code.toLowerCase())
-      const porNome = (data||[]).find(s => s.name.toLowerCase() === prod.name.toLowerCase())
-      const encontrado = porCodigo || porNome
-      return {
-        produto_nfe: prod,
-        modo: encontrado ? 'existente' : 'novo',
-        stock_item_id: encontrado?.id || null,
-        stock_item_name: encontrado?.name || null,
+      if (error) {
+        console.error('Erro ao carregar estoque:', error)
+        // Mesmo com erro, monta a conciliação com todos como 'novo'
+        const conc = nfeData.produtos.map(prod => ({
+          produto_nfe: prod, modo: 'novo', stock_item_id: null, stock_item_name: null,
+        }))
+        setConciliacao(conc)
+        setLoading(false)
+        return
       }
-    })
-    setConciliacao(conc)
+
+      // Tenta auto-conciliar por código ou nome similar
+      const conc = nfeData.produtos.map(prod => {
+        const porCodigo = (data||[]).find(s => s.code && prod.code && s.code.toLowerCase() === prod.code.toLowerCase())
+        const porNome = (data||[]).find(s => s.name && s.name.toLowerCase() === prod.name.toLowerCase())
+        const encontrado = porCodigo || porNome
+        return {
+          produto_nfe: prod,
+          modo: encontrado ? 'existente' : 'novo',
+          stock_item_id: encontrado?.id || null,
+          stock_item_name: encontrado?.name || null,
+        }
+      })
+      setConciliacao(conc)
+    } catch (e) {
+      console.error(e)
+      const conc = nfeData.produtos.map(prod => ({
+        produto_nfe: prod, modo: 'novo', stock_item_id: null, stock_item_name: null,
+      }))
+      setConciliacao(conc)
+    }
     setLoading(false)
   }
 
