@@ -11,6 +11,7 @@ import Oficina from './pages/Oficina'
 import Orcamentos from './pages/Orcamentos'
 import Receber from './pages/Receber'
 import Pagar from './pages/Pagar'
+import Configuracoes from './pages/Configuracoes'
 import FluxoCaixa from './pages/FluxoCaixa'
 import Estoque from './pages/Estoque'
 import Compras from './pages/Compras'
@@ -51,6 +52,7 @@ function AppRoutes() {
         <Route path="receber" element={<Receber />} />
         <Route path="pagar" element={<Pagar />} />
         <Route path="fluxo" element={<FluxoCaixa />} />
+        <Route path="configuracoes" element={<Configuracoes />} />
         <Route path="estoque" element={<Estoque />} />
         <Route path="compras" element={<Compras />} />
         <Route path="compras/conciliacao" element={<ComprasConciliacao />} />
