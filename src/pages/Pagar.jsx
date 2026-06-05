@@ -88,7 +88,7 @@ export default function Pagar() {
     const fim = `${ano}-${String(mes).padStart(2,'0')}-${String(ultimoDia).padStart(2,'0')}`
     const { data } = await supabase
       .from('payables')
-      .select('*, suppliers(name)')
+      .select('*')
       .gte('due_date', inicio)
       .lte('due_date', fim)
       .order('due_date', { ascending: true })
@@ -174,6 +174,7 @@ export default function Pagar() {
       due_date: formConta.due_date || null,
       category: formConta.category || null,
       supplier_id: formConta.supplier_id || null,
+      supplier_name: formConta.supplier_name || buscaFornecedor || null,
       status: 'em_aberto',
     }
     if (modalConta === 'novo') {
@@ -270,7 +271,7 @@ export default function Pagar() {
                   <p className="text-sm font-semibold text-gray-900 truncate">{c.description||'—'}</p>
                   <div className="flex items-center gap-2 mt-0.5">
                     {c.category && <span className="text-xs text-gray-400">{c.category}</span>}
-                    {c.suppliers?.name && <span className="text-xs text-blue-500">{c.suppliers.name}</span>}
+                    {c.supplier_name && <span className="text-xs text-blue-500">{c.supplier_name}</span>}
                   </div>
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-xs text-gray-400">Venc: {fmtData(c.due_date)}</span>
