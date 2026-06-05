@@ -116,6 +116,13 @@ export default function Receber() {
   const recebidos  = contas.filter(c => c.status === 'recebido').reduce((s,c) => s + Number(c.amount||0), 0)
   const total      = contas.reduce((s,c) => s + Number(c.amount||0), 0)
 
+  // Normaliza status: pendente = em_aberto
+  function stNorm(c) {
+    if (c.status === 'recebido') return 'recebido'
+    if (c.due_date && c.due_date < hojeStr) return 'vencido'
+    return 'em_aberto'
+  }
+
   // Marcar como recebido
   async function confirmarRecebimento() {
     if (!modalReceber) return
@@ -251,14 +258,14 @@ export default function Receber() {
         ) : filtradas.length === 0 ? (
           <div className="text-center py-12 text-gray-400 text-sm">Nenhuma conta neste período</div>
         ) : filtradas.map(c => {
-          const st = STATUS_STYLE[statusConta(c)]
+          const st = STATUS_STYLE[stNorm(c)]
           return (
             <div key={c.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
               <div className="flex items-start gap-3 px-4 py-3">
                 {/* Barra lateral colorida */}
                 <div className={`w-1 self-stretch rounded-full flex-shrink-0 ${
-                  statusConta(c) === 'vencido' ? 'bg-red-400' :
-                  statusConta(c) === 'recebido' ? 'bg-green-400' : 'bg-blue-400'
+                  stNorm(c) === 'vencido' ? 'bg-red-400' :
+                  stNorm(c) === 'recebido' ? 'bg-green-400' : 'bg-blue-400'
                 }`} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900 truncate">{c.description || '—'}</p>
