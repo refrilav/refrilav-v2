@@ -108,7 +108,9 @@ export default function Layout() {
                 <div className="w-10 h-1 bg-gray-200 rounded-full" />
               </div>
               <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
-                <div className="flex items-center gap-2">
+                <img src="/logo.png" alt="Refrilav" className="h-8 object-contain"
+                  onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }}/>
+                <div className="items-center gap-2 hidden">
                   <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center">
                     <span className="text-white font-bold text-xs">R</span>
                   </div>
@@ -168,10 +170,14 @@ export default function Layout() {
       <aside className={`flex flex-col bg-navy text-white transition-all duration-300 ${collapsed ? 'w-16' : 'w-56'} min-h-screen flex-shrink-0`}>
         {/* Logo */}
         <div className={`flex items-center gap-3 px-4 py-4 border-b border-white/10 ${collapsed ? 'justify-center' : ''}`}>
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-bold text-sm">R</span>
-          </div>
-          {!collapsed && <span className="font-bold text-base tracking-wide">Refrilav</span>}
+          {collapsed ? (
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+              <span className="text-white font-bold text-sm">R</span>
+            </div>
+          ) : (
+            <img src="/logo.png" alt="Refrilav" className="h-8 object-contain"
+              onError={e => { e.target.style.display='none' }}/>
+          )}
         </div>
 
         {/* Nav com grupos */}
