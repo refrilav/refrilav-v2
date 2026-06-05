@@ -44,7 +44,7 @@ export default function Atendimentos() {
       .from('services')
       .select('id, scheduled_at, status, type, equipment, brand, model, total_price, clients(name, phone)')
       .order('scheduled_at', { ascending: false })
-      .range(0, 99)
+      .range(0, 9999)
     if (filtroStatus) q = q.eq('status', filtroStatus)
     const { data } = await q
     setServicos(data || [])

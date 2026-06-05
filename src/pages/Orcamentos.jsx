@@ -40,7 +40,7 @@ export default function Orcamentos() {
       .from('quotes')
       .select('*, clients(name, phone)')
       .order('created_at', { ascending: false })
-      .range(0, 99)
+      .range(0, 9999)
     if (filtro) q = q.eq('status', filtro)
     const { data } = await q
     setOrcamentos(data || [])

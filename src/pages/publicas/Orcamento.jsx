@@ -33,7 +33,7 @@ export default function Orcamento() {
       if (!o) { setNotFound(true); setLoading(false); return }
 
       const { data: p } = await supabase
-        .from('quote_parts').select('*').eq('quote_id', token).range(0, 999)
+        .from('quote_parts').select('*').eq('quote_id', token).range(0, 9999)
 
       const { data: cfg } = await supabase
         .from('settings').select('*').single()

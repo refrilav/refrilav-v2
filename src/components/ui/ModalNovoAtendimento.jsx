@@ -47,7 +47,7 @@ export default function ModalNovoAtendimento({ dataHora, onClose, onSalvo }) {
         .from('clients')
         .select('id, name, phone, address, neighborhood, city')
         .ilike('name', `%${busca}%`)
-        .range(0, 9)
+        .range(0, 9999)
       setClientes(data || [])
       setMostrarResultados(true)
     }, 300)

@@ -27,7 +27,7 @@ export default function Clientes() {
       .from('clients')
       .select('id, name, phone, address, neighborhood, city')
       .order('name', { ascending: true })
-      .range(0, 199)
+      .range(0, 9999)
     setClientes(data || [])
     setLoading(false)
   }
@@ -40,7 +40,7 @@ export default function Clientes() {
       .select('id, name, phone, address, neighborhood, city')
       .or(`name.ilike.%${termo}%,phone.ilike.%${termo}%,address.ilike.%${termo}%,neighborhood.ilike.%${termo}%`)
       .order('name', { ascending: true })
-      .range(0, 99)
+      .range(0, 9999)
     setClientes(data || [])
     setLoading(false)
   }

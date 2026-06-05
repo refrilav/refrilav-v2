@@ -54,7 +54,7 @@ export default function Recibo() {
         .from('service_parts')
         .select('*')
         .eq(tipo === 'service' ? 'service_id' : 'workshop_order_id', token)
-        .range(0, 999)
+        .range(0, 9999)
 
       const { data: cfg } = await supabase
         .from('settings')

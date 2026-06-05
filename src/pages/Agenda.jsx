@@ -101,7 +101,7 @@ export default function Agenda() {
       .gte('scheduled_at', dateStr(antes) + 'T00:00')
       .lte('scheduled_at', dateStr(depois) + 'T23:59')
       .not('scheduled_at', 'is', null)
-      .range(0, 999)
+      .range(0, 9999)
 
     // Filtra apenas os do dia correto (resolve problema de timezone)
     const dodia = (data || []).filter(s => getDataParte(s.scheduled_at) === dStr)

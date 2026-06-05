@@ -35,7 +35,7 @@ export default function Oficina() {
       .select('*, clients(name, phone)')
       .neq('etapa', 'entregue')
       .order('created_at', { ascending: false })
-      .range(0, 999)
+      .range(0, 9999)
     if (etapaFiltro) q = q.eq('etapa', etapaFiltro)
     else q = q.neq('etapa', 'entregue')
     const { data } = await q

@@ -35,7 +35,7 @@ export default function OrcamentoDetalhe() {
       .select('*, clients(name, phone, address, neighborhood, city)')
       .eq('id', id).single()
     const { data: p } = await supabase
-      .from('quote_parts').select('*').eq('quote_id', id).range(0,999)
+      .from('quote_parts').select('*').eq('quote_id', id).range(0, 9999)
     setOrc(o); setPecas(p||[])
     setDiag(o?.diagnosis || '')
     setDesc(o?.services_description || '')

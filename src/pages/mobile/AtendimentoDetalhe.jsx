@@ -52,7 +52,7 @@ export default function AtendimentoDetalhe() {
       .select('*, clients(name, phone, address, neighborhood, city)')
       .eq('id', id).single()
     const { data: p } = await supabase
-      .from('service_parts').select('*').eq('service_id', id).range(0,999)
+      .from('service_parts').select('*').eq('service_id', id).range(0, 9999)
     setServico(s)
     setPecas(p || [])
     setDiag(s?.diagnosis || '')

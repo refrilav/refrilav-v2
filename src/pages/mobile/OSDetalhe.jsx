@@ -72,7 +72,7 @@ export default function OSDetalhe() {
       .from('service_parts')
       .select('*')
       .eq('workshop_order_id', id)
-      .range(0, 999)
+      .range(0, 9999)
     setOs(o)
     setPecas(p || [])
     setDiagnostico(o?.diagnosis || '')
