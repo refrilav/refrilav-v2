@@ -113,14 +113,15 @@ export default function OSDetalhe() {
     if (proxima === 'entregue') {
       const total = os.total_price || 0
       if (total > 0) {
-        await supabase.from('receivables').insert({
+        const { error } = await supabase.from('receivables').insert({
           workshop_order_id: id,
           client_id: os.client_id,
           description: `Oficina - ${os.clients?.name || 'Cliente'} - ${[os.equipment, os.brand, os.model].filter(Boolean).join(' ')}`,
           amount: total,
           due_date: nowStr.substring(0, 10),
-          status: 'pendente',
+          status: 'em_aberto',
         })
+        if (error) alert('OS entregue mas erro ao gerar cobrança: ' + error.message)
       }
     }
 

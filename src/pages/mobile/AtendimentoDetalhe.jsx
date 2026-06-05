@@ -109,14 +109,15 @@ export default function AtendimentoDetalhe() {
     const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}T${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
     await supabase.from('services').update({ status: 'concluido', finished_at: ts }).eq('id', id)
     if (servico?.total_price > 0) {
-      await supabase.from('receivables').insert({
+      const { error } = await supabase.from('receivables').insert({
         service_id: id,
         client_id: servico.client_id,
         description: `Atendimento - ${servico.clients?.name || ''} - ${[servico.equipment,servico.brand,servico.model].filter(Boolean).join(' ')}`,
         amount: servico.total_price,
         due_date: ts.substring(0,10),
-        status: 'pendente',
+        status: 'em_aberto',
       })
+      if (error) alert('Atenção: atendimento concluído mas erro ao gerar cobrança: ' + error.message)
     }
     setSalvando(false)
     carregar()
