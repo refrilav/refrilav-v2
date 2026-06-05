@@ -37,16 +37,26 @@ export default function FluxoCaixa() {
     const mes = mesRef.getMonth()
 
     if (visao === 'diario' || true) {
-      // Para visão diária busca o mês atual
       const inicio = `${ano}-${pad(mes+1)}-01`
       const fim = `${ano}-${pad(mes+1)}-${pad(diasNoMes(ano, mes))}`
 
       const [{ data: rec }, { data: pag }] = await Promise.all([
-        supabase.from('receivables').select('amount, received_at, due_date, status').eq('status', 'recebido').gte('received_at', inicio).lte('received_at', fim).range(0, 9999),
-        supabase.from('payables').select('amount, paid_at, due_date, status').eq('status', 'pago').gte('paid_at', inicio).lte('paid_at', fim).range(0, 9999),
+        supabase.from('receivables').select('amount, received_at, due_date, status').eq('status', 'recebido').range(0, 9999),
+        supabase.from('payables').select('amount, paid_at, due_date, status').eq('status', 'pago').range(0, 9999),
       ])
-      setRecebimentos(rec || [])
-      setPagamentos(pag || [])
+
+      // Filtra em JS usando received_at se existir, senão due_date
+      const recFiltrado = (rec || []).filter(r => {
+        const data = (r.received_at || r.due_date || '').substring(0, 10)
+        return data >= inicio && data <= fim
+      })
+      const pagFiltrado = (pag || []).filter(p => {
+        const data = (p.paid_at || p.due_date || '').substring(0, 10)
+        return data >= inicio && data <= fim
+      })
+
+      setRecebimentos(recFiltrado)
+      setPagamentos(pagFiltrado)
     }
     setLoading(false)
   }
@@ -69,9 +79,9 @@ export default function FluxoCaixa() {
 
     return Array.from({ length: total }, (_, i) => {
       const dia = `${ano}-${pad(mes+1)}-${pad(i+1)}`
-      const recDia = recebimentos.filter(r => (r.received_at||'').substring(0,10) === dia)
+      const recDia = recebimentos.filter(r => (r.received_at || r.due_date || '').substring(0,10) === dia)
         .reduce((s, r) => s + Number(r.amount || 0), 0)
-      const pagDia = pagamentos.filter(p => (p.paid_at||'').substring(0,10) === dia)
+      const pagDia = pagamentos.filter(p => (p.paid_at || p.due_date || '').substring(0,10) === dia)
         .reduce((s, p) => s + Number(p.amount || 0), 0)
       saldoAcumulado += recDia - pagDia
       return { dia, recDia, pagDia, saldo: saldoAcumulado, isHoje: dia === hoje, temMovimento: recDia > 0 || pagDia > 0 }
