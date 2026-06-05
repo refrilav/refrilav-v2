@@ -2,7 +2,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import {
   LayoutDashboard, Users, Wrench, FileText, Calendar, ClipboardList,
-  LogOut, Settings, ChevronLeft, ChevronRight, Menu, X, TrendingUp
+  LogOut, Settings, ChevronLeft, ChevronRight, Menu, X, TrendingUp, TrendingDown
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -12,6 +12,7 @@ const navItems = [
   { path: '/oficina',       label: 'Oficina',        icon: Wrench },
   { path: '/orcamentos',    label: 'Orçamentos',     icon: FileText },
   { path: '/receber',       label: 'A Receber',      icon: TrendingUp },
+  { path: '/pagar',         label: 'A Pagar',        icon: TrendingDown },
   { path: '/clientes',      label: 'Clientes',       icon: Users },
   { path: '/dashboard',     label: 'Dashboard',      icon: LayoutDashboard },
 ]

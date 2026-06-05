@@ -9,6 +9,7 @@ import Clientes from './pages/Clientes'
 import Oficina from './pages/Oficina'
 import Orcamentos from './pages/Orcamentos'
 import Receber from './pages/Receber'
+import Pagar from './pages/Pagar'
 import AtendimentoDetalhe from './pages/mobile/AtendimentoDetalhe'
 import OSDetalhe from './pages/mobile/OSDetalhe'
 import OrcamentoDetalhe from './pages/mobile/OrcamentoDetalhe'
@@ -38,6 +39,7 @@ function AppRoutes() {
         <Route path="oficina" element={<Oficina />} />
         <Route path="orcamentos" element={<Orcamentos />} />
         <Route path="receber" element={<Receber />} />
+        <Route path="pagar" element={<Pagar />} />
         <Route path="clientes" element={<Clientes />} />
         <Route path="dashboard" element={<Dashboard />} />
       </Route>
