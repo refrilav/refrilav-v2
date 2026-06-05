@@ -3,7 +3,7 @@ import { useAuth } from '../../hooks/useAuth'
 import {
   LayoutDashboard, Users, Wrench, FileText, Calendar, ClipboardList,
   LogOut, Settings, ChevronLeft, ChevronRight, Menu, X,
-  TrendingUp, TrendingDown, Package, ShoppingCart, BarChart2, DollarSign, ShoppingBag
+  TrendingUp, TrendingDown, Package, ShoppingCart, BarChart2, DollarSign, ShoppingBag, Home
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -31,6 +31,12 @@ const GRUPOS = [
       { path: '/receber',      label: 'A Receber',      icon: TrendingUp      },
       { path: '/pagar',        label: 'A Pagar',        icon: TrendingDown    },
       { path: '/fluxo',        label: 'Fluxo de Caixa', icon: BarChart2       },
+    ]
+  },
+  {
+    label: 'Pessoal',
+    items: [
+      { path: '/pessoal', label: 'Financeiro Pessoal', icon: Home },
     ]
   },
   {
