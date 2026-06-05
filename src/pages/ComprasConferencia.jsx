@@ -64,7 +64,8 @@ export default function ComprasConferencia() {
       }).select().single()
 
       // 3. Para cada item — criar produto novo ou atualizar existente
-      for (const item of itensAtivos) {
+      for (let idx = 0; idx < itensAtivos.length; idx++) {
+        const item = itensAtivos[idx]
         const prod = item.produto_nfe
         let stockItemId = item.stock_item_id
 
