@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useEffect } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import Login from './pages/Login'
 import Layout from './components/layout/Layout'
@@ -34,6 +34,9 @@ function PrivateRoute({ children }) {
 }
 
 function AppRoutes() {
+  useEffect(() => {
+    document.title = 'Refrilav Gestão'
+  }, [])
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
