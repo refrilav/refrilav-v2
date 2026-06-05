@@ -45,7 +45,7 @@ export default function Receber() {
   const [loading, setLoading] = useState(true)
   const [clientes, setClientes] = useState([])
 
-  // Modal receber
+  const [filtroCard, setFiltroCard] = useState(null) // null | 'vencido' | 'hoje' | 'a_vencer' | 'recebido'
   const [modalReceber, setModalReceber] = useState(null)
   const [formaPgto, setFormaPgto] = useState('Dinheiro')
   const [desconto, setDesconto] = useState('')
@@ -94,20 +94,27 @@ export default function Receber() {
     setMesRef(d)
   }
 
-  const filtradas = contas.filter(c => {
-    if (!busca) return true
-    const desc = (c.description || '').toLowerCase()
-    const nome = (c.clients?.name || '').toLowerCase()
-    return desc.includes(busca.toLowerCase()) || nome.includes(busca.toLowerCase())
-  })
-
   // Totais
   const hojeStr = hoje()
-  const vencidos   = filtradas.filter(c => c.status !== 'recebido' && c.due_date < hojeStr).reduce((s,c) => s + Number(c.amount||0), 0)
-  const vencemHoje = filtradas.filter(c => c.status !== 'recebido' && c.due_date === hojeStr).reduce((s,c) => s + Number(c.amount||0), 0)
-  const aVencer    = filtradas.filter(c => c.status !== 'recebido' && c.due_date > hojeStr).reduce((s,c) => s + Number(c.amount||0), 0)
-  const recebidos  = filtradas.filter(c => c.status === 'recebido').reduce((s,c) => s + Number(c.amount||0), 0)
-  const total      = filtradas.reduce((s,c) => s + Number(c.amount||0), 0)
+
+  const filtradas = contas.filter(c => {
+    if (busca) {
+      const desc = (c.description || '').toLowerCase()
+      const nome = (c.clients?.name || '').toLowerCase()
+      if (!desc.includes(busca.toLowerCase()) && !nome.includes(busca.toLowerCase())) return false
+    }
+    if (filtroCard === 'vencido')   return c.status !== 'recebido' && c.due_date < hojeStr
+    if (filtroCard === 'hoje')      return c.status !== 'recebido' && c.due_date === hojeStr
+    if (filtroCard === 'a_vencer')  return c.status !== 'recebido' && c.due_date > hojeStr
+    if (filtroCard === 'recebido')  return c.status === 'recebido'
+    return true
+  })
+
+  const vencidos   = contas.filter(c => c.status !== 'recebido' && c.due_date < hojeStr).reduce((s,c) => s + Number(c.amount||0), 0)
+  const vencemHoje = contas.filter(c => c.status !== 'recebido' && c.due_date === hojeStr).reduce((s,c) => s + Number(c.amount||0), 0)
+  const aVencer    = contas.filter(c => c.status !== 'recebido' && c.due_date > hojeStr).reduce((s,c) => s + Number(c.amount||0), 0)
+  const recebidos  = contas.filter(c => c.status === 'recebido').reduce((s,c) => s + Number(c.amount||0), 0)
+  const total      = contas.reduce((s,c) => s + Number(c.amount||0), 0)
 
   // Marcar como recebido
   async function confirmarRecebimento() {
@@ -203,24 +210,36 @@ export default function Receber() {
         </div>
       </div>
 
-      {/* Cards de totais */}
+      {/* Cards de totais — clicáveis como filtro */}
       <div className="px-4 pt-3">
         <div className="grid grid-cols-5 gap-1.5 mb-3">
           {[
-            { label: 'Vencidos', valor: vencidos, cor: 'text-red-600' },
-            { label: 'Vencem hoje', valor: vencemHoje, cor: 'text-orange-500' },
-            { label: 'A vencer', valor: aVencer, cor: 'text-blue-600' },
-            { label: 'Recebidos', valor: recebidos, cor: 'text-green-600' },
-            { label: 'Total', valor: total, cor: 'text-navy' },
-          ].map(({ label, valor, cor }) => (
-            <div key={label} className="bg-white rounded-xl p-2 shadow-sm text-center">
+            { label: 'Vencidos',     valor: vencidos,   cor: 'text-red-600',    filtro: 'vencido',   ativo: 'ring-2 ring-red-400'    },
+            { label: 'Vencem hoje',  valor: vencemHoje, cor: 'text-orange-500', filtro: 'hoje',      ativo: 'ring-2 ring-orange-400' },
+            { label: 'A vencer',     valor: aVencer,    cor: 'text-blue-600',   filtro: 'a_vencer',  ativo: 'ring-2 ring-blue-400'   },
+            { label: 'Recebidos',    valor: recebidos,  cor: 'text-green-600',  filtro: 'recebido',  ativo: 'ring-2 ring-green-400'  },
+            { label: 'Total',        valor: total,      cor: 'text-navy',       filtro: null,        ativo: ''                       },
+          ].map(({ label, valor, cor, filtro, ativo }) => (
+            <button
+              key={label}
+              onClick={() => setFiltroCard(filtroCard === filtro ? null : filtro)}
+              className={`bg-white rounded-xl p-2 shadow-sm text-center transition ${
+                filtroCard === filtro && filtro !== null ? ativo + ' bg-gray-50' : 'hover:bg-gray-50'
+              }`}
+            >
               <p className="text-[9px] text-gray-400 mb-0.5 leading-tight">{label}</p>
               <p className={`text-xs font-bold ${cor} leading-tight`}>
                 {Number(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
-            </div>
+            </button>
           ))}
         </div>
+        {filtroCard && (
+          <button onClick={() => setFiltroCard(null)}
+            className="w-full text-center text-xs text-primary font-medium mb-2 flex items-center justify-center gap-1">
+            <X size={12} /> Limpar filtro
+          </button>
+        )}
       </div>
 
       {/* Lista */}
