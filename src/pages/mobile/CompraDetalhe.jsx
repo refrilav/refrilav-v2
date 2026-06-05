@@ -22,13 +22,6 @@ export default function CompraDetalhe() {
 
   useEffect(() => { carregar() }, [id])
 
-  async function excluir() {
-    if (!window.confirm('Excluir esta compra? Os itens de estoque não serão revertidos.')) return
-    await supabase.from('purchase_items').delete().eq('purchase_id', id)
-    await supabase.from('purchases').delete().eq('id', id)
-    navigate('/compras')
-  }
-
   async function carregar() {
     setLoading(true)
     const { data: c } = await supabase.from('purchases').select('*').eq('id', id).single()
@@ -36,6 +29,13 @@ export default function CompraDetalhe() {
     setCompra(c)
     setItens(i || [])
     setLoading(false)
+  }
+
+  async function excluir() {
+    if (!window.confirm('Excluir esta compra? Os itens de estoque não serão revertidos.')) return
+    await supabase.from('purchase_items').delete().eq('purchase_id', id)
+    await supabase.from('purchases').delete().eq('id', id)
+    navigate('/compras')
   }
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"/></div>
@@ -60,7 +60,6 @@ export default function CompraDetalhe() {
 
       <div className="px-4 py-4 space-y-4">
 
-        {/* Dados da compra */}
         <div className="bg-white rounded-2xl shadow-sm p-4">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Informações</p>
           <div className="grid grid-cols-2 gap-3">
@@ -77,7 +76,6 @@ export default function CompraDetalhe() {
           )}
         </div>
 
-        {/* Itens */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-50">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Produtos ({itens.length})</p>
