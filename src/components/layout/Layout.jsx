@@ -3,7 +3,8 @@ import { useAuth } from '../../hooks/useAuth'
 import {
   LayoutDashboard, Users, Wrench, FileText, Calendar, ClipboardList,
   LogOut, Settings, ChevronLeft, ChevronRight, Menu, X,
-  TrendingUp, TrendingDown, Package, ShoppingCart, BarChart2, DollarSign, ShoppingBag, Home
+  TrendingUp, TrendingDown, Package, ShoppingCart, BarChart2, DollarSign,
+  ShoppingBag, Home, PieChart, ClipboardCheck
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -30,7 +31,8 @@ const GRUPOS = [
     items: [
       { path: '/receber',      label: 'A Receber',      icon: TrendingUp      },
       { path: '/pagar',        label: 'A Pagar',        icon: TrendingDown    },
-      { path: '/fluxo',        label: 'Fluxo de Caixa', icon: BarChart2       },
+      { path: '/fluxo',        label: 'Fluxo de Caixa', icon: BarChart2      },
+      { path: '/dre',          label: 'DRE',            icon: PieChart        },
     ]
   },
   {
@@ -46,12 +48,14 @@ const GRUPOS = [
       { path: '/compras',      label: 'Compras',        icon: ShoppingCart    },
     ]
   },
+  {
+    label: 'PMOC',
+    items: [
+      { path: '/pmoc',         label: 'PMOC',           icon: ClipboardCheck  },
+    ]
+  },
 ]
 
-// Todos os itens flat para o menu mobile hamburguer
-const todosItens = GRUPOS.flatMap(g => g.items)
-
-// Menu fixo inferior mobile
 const navBottomItems = [
   { path: '/agenda',       label: 'Agenda',       icon: Calendar      },
   { path: '/atendimentos', label: 'Atendimentos', icon: ClipboardList },
@@ -72,7 +76,6 @@ export default function Layout() {
     setMenuAberto(false)
   }
 
-  // MOBILE
   if (isMobile) {
     return (
       <div className="flex flex-col min-h-screen bg-gray-50">
@@ -80,7 +83,6 @@ export default function Layout() {
           <Outlet />
         </main>
 
-        {/* Nav inferior fixo */}
         <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-50"
           style={{paddingBottom: 'env(safe-area-inset-bottom)'}}>
           <div className="flex">
@@ -88,15 +90,12 @@ export default function Layout() {
               const active = location.pathname === path
               return (
                 <button key={path} onClick={() => navegar(path)}
-                  className={`flex-1 flex flex-col items-center py-2 gap-0.5 transition ${
-                    active ? 'text-primary' : 'text-gray-400'
-                  }`}>
+                  className={`flex-1 flex flex-col items-center py-2 gap-0.5 transition ${active ? 'text-primary' : 'text-gray-400'}`}>
                   <Icon size={20} strokeWidth={active ? 2.5 : 1.8} />
                   <span className="text-[10px]">{label}</span>
                 </button>
               )
             })}
-            {/* Hamburguer */}
             <button onClick={() => setMenuAberto(true)}
               className={`flex-1 flex flex-col items-center py-2 gap-0.5 transition ${menuAberto ? 'text-primary' : 'text-gray-400'}`}>
               <Menu size={20} strokeWidth={1.8} />
@@ -105,7 +104,6 @@ export default function Layout() {
           </div>
         </nav>
 
-        {/* Drawer menu completo */}
         {menuAberto && (
           <>
             <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setMenuAberto(false)} />
@@ -128,7 +126,6 @@ export default function Layout() {
                 </button>
               </div>
 
-              {/* Grupos no drawer */}
               <div className="px-4 py-3 space-y-4">
                 {GRUPOS.map(grupo => (
                   <div key={grupo.label}>
@@ -151,7 +148,6 @@ export default function Layout() {
                 ))}
               </div>
 
-              {/* Configurações e Sair */}
               <div className="px-4 pb-2 grid grid-cols-2 gap-2 border-t border-gray-100 pt-3">
                 <button onClick={() => navegar('/configuracoes')}
                   className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-gray-50 text-gray-600">
@@ -171,11 +167,9 @@ export default function Layout() {
     )
   }
 
-  // DESKTOP com sidebar em grupos
   return (
     <div className="flex min-h-screen bg-gray-50">
       <aside className={`flex flex-col bg-navy text-white transition-all duration-300 ${collapsed ? 'w-16' : 'w-56'} min-h-screen flex-shrink-0`}>
-        {/* Logo */}
         <div className={`flex items-center gap-3 px-4 py-4 border-b border-white/10 ${collapsed ? 'justify-center' : ''}`}>
           {collapsed ? (
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
@@ -187,7 +181,6 @@ export default function Layout() {
           )}
         </div>
 
-        {/* Nav com grupos */}
         <nav className="flex-1 py-3 overflow-y-auto">
           {GRUPOS.map(grupo => (
             <div key={grupo.label} className="mb-3">
@@ -214,7 +207,6 @@ export default function Layout() {
           ))}
         </nav>
 
-        {/* Bottom */}
         <div className="p-2 space-y-0.5 border-t border-white/10">
           <button onClick={() => navigate('/configuracoes')}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-blue-100 hover:bg-white/10 transition ${collapsed ? 'justify-center' : ''}`}>

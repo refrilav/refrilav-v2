@@ -20,6 +20,8 @@ import Compras from './pages/Compras'
 import CompraDetalhe from './pages/CompraDetalhe'
 import ComprasConciliacao from './pages/ComprasConciliacao'
 import ComprasConferencia from './pages/ComprasConferencia'
+import DRE from './pages/DRE'
+import PMOC from './pages/PMOC'
 import AtendimentoDetalhe from './pages/mobile/AtendimentoDetalhe'
 import OSDetalhe from './pages/mobile/OSDetalhe'
 import OrcamentoDetalhe from './pages/mobile/OrcamentoDetalhe'
@@ -55,6 +57,8 @@ function AppRoutes() {
         <Route path="receber" element={<Receber />} />
         <Route path="pagar" element={<Pagar />} />
         <Route path="fluxo" element={<FluxoCaixa />} />
+        <Route path="dre" element={<DRE />} />
+        <Route path="pmoc" element={<PMOC />} />
         <Route path="configuracoes" element={<Configuracoes />} />
         <Route path="pessoal" element={<PessoalPagar />} />
         <Route path="estoque" element={<Estoque />} />
@@ -70,7 +74,6 @@ function AppRoutes() {
       <Route path="/m/oficina/:id" element={<PrivateRoute><OSDetalhe /></PrivateRoute>} />
       <Route path="/m/orcamento/:id" element={<PrivateRoute><OrcamentoDetalhe /></PrivateRoute>} />
       <Route path="/m/recolher/:id" element={<PrivateRoute><RecolherEquipamento /></PrivateRoute>} />
-      {/* Rota pública — sem login */}
       <Route path="/recibo/:token" element={<Recibo />} />
       <Route path="/orcamento/:token" element={<Orcamento />} />
     </Routes>
