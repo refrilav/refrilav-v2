@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard'
 import Agenda from './pages/Agenda'
 import Atendimentos from './pages/Atendimentos'
 import Clientes from './pages/Clientes'
+import ClienteDetalhe from './pages/ClienteDetalhe'
 import Oficina from './pages/Oficina'
 import Orcamentos from './pages/Orcamentos'
 import Vendas from './pages/Vendas'
@@ -67,6 +68,7 @@ function AppRoutes() {
         <Route path="compras/conferencia" element={<ComprasConferencia />} />
         <Route path="compras/:id" element={<CompraDetalhe />} />
         <Route path="clientes" element={<Clientes />} />
+        <Route path="clientes/:id" element={<ClienteDetalhe />} />
         <Route path="dashboard" element={<Dashboard />} />
       </Route>
 

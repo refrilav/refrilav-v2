@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { Search, User, Phone, MapPin, Edit2, Trash2, X, Save, Download, Plus } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Search, User, Phone, MapPin, X, Download, Plus } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 function exportarExcel(dados, nomeArquivo) {
@@ -14,18 +15,13 @@ function exportarExcel(dados, nomeArquivo) {
 const FORM_VAZIO = { name:'', phone:'', address:'', neighborhood:'', city:'' }
 
 export default function Clientes() {
+  const navigate = useNavigate()
   const [busca, setBusca] = useState('')
   const [clientes, setClientes] = useState([])
   const [loading, setLoading] = useState(false)
-  const [editando, setEditando] = useState(null)
-  const [form, setForm] = useState({})
-  const [salvando, setSalvando] = useState(false)
-
-  // Modal novo cliente
   const [modalNovo, setModalNovo] = useState(false)
   const [formNovo, setFormNovo] = useState(FORM_VAZIO)
   const [salvandoNovo, setSalvandoNovo] = useState(false)
-
   const buscaTimeout = useRef(null)
 
   useEffect(() => {
@@ -70,25 +66,6 @@ export default function Clientes() {
     busca ? buscarPorTermo(busca) : buscarTodos()
   }
 
-  function abrirEdicao(c) {
-    setEditando(c.id)
-    setForm({ name: c.name||'', phone: c.phone||'', address: c.address||'', neighborhood: c.neighborhood||'', city: c.city||'' })
-  }
-
-  async function salvarEdicao(id) {
-    setSalvando(true)
-    await supabase.from('clients').update(form).eq('id', id)
-    setSalvando(false)
-    setEditando(null)
-    busca ? buscarPorTermo(busca) : buscarTodos()
-  }
-
-  async function excluir(id, nome) {
-    if (!window.confirm(`Excluir o cliente "${nome}"?`)) return
-    await supabase.from('clients').delete().eq('id', id)
-    busca ? buscarPorTermo(busca) : buscarTodos()
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white border-b border-gray-100 px-4 pt-4 pb-4 sticky top-0 z-10">
@@ -120,69 +97,37 @@ export default function Clientes() {
 
       <div className="px-4 py-3 space-y-2">
         {loading ? (
-          <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"/></div>
+          <div className="flex justify-center py-12">
+            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"/>
+          </div>
         ) : clientes.length === 0 ? (
           <div className="text-center py-12 text-gray-400 text-sm">Nenhum cliente encontrado</div>
         ) : clientes.map(c => (
-          <div key={c.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            {editando === c.id ? (
-              <div className="p-4 space-y-3">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Editando</span>
-                  <button onClick={() => setEditando(null)}><X size={16} className="text-gray-400"/></button>
-                </div>
-                <input value={form.name} onChange={e => setForm(f=>({...f,name:e.target.value}))}
-                  placeholder="Nome" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
-                <input value={form.phone} onChange={e => setForm(f=>({...f,phone:e.target.value}))}
-                  placeholder="Telefone" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
-                <input value={form.address} onChange={e => setForm(f=>({...f,address:e.target.value}))}
-                  placeholder="Endereço" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
-                <div className="grid grid-cols-2 gap-2">
-                  <input value={form.neighborhood} onChange={e => setForm(f=>({...f,neighborhood:e.target.value}))}
-                    placeholder="Bairro" className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
-                  <input value={form.city} onChange={e => setForm(f=>({...f,city:e.target.value}))}
-                    placeholder="Cidade" className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => salvarEdicao(c.id)} disabled={salvando}
-                    className="flex-1 bg-primary text-white rounded-xl py-2.5 text-sm font-semibold flex items-center justify-center gap-1 disabled:opacity-60">
-                    <Save size={14}/>{salvando ? 'Salvando...' : 'Salvar'}
-                  </button>
-                  <button onClick={() => setEditando(null)} className="px-4 bg-gray-100 text-gray-600 rounded-xl py-2.5 text-sm">Cancelar</button>
-                </div>
+          <div key={c.id} onClick={() => navigate(`/clientes/${c.id}`)}
+            className="bg-white rounded-2xl shadow-sm overflow-hidden cursor-pointer active:scale-[0.99] transition">
+            <div className="flex items-start gap-3 px-4 py-3">
+              <div className="w-9 h-9 bg-navy/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <User size={16} className="text-navy"/>
               </div>
-            ) : (
-              <div className="flex items-start gap-3 px-4 py-3">
-                <div className="w-9 h-9 bg-navy/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <User size={16} className="text-navy"/>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-gray-900 truncate">{c.name}</div>
-                  {c.phone && (
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <Phone size={11} className="text-gray-400 flex-shrink-0"/>
-                      <span className="text-xs text-gray-500 truncate">{c.phone}</span>
-                    </div>
-                  )}
-                  {(c.address || c.neighborhood || c.city) && (
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <MapPin size={11} className="text-gray-400 flex-shrink-0"/>
-                      <span className="text-xs text-gray-400 truncate">
-                        {[c.address, c.neighborhood, c.city].filter(Boolean).join(', ')}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <button onClick={() => abrirEdicao(c)} className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition">
-                    <Edit2 size={14} className="text-gray-500"/>
-                  </button>
-                  <button onClick={() => excluir(c.id, c.name)} className="p-2 rounded-lg bg-red-50 hover:bg-red-100 transition">
-                    <Trash2 size={14} className="text-red-500"/>
-                  </button>
-                </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold text-gray-900 truncate">{c.name}</div>
+                {c.phone && (
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Phone size={11} className="text-gray-400 flex-shrink-0"/>
+                    <span className="text-xs text-gray-500 truncate">{c.phone}</span>
+                  </div>
+                )}
+                {(c.address || c.neighborhood || c.city) && (
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <MapPin size={11} className="text-gray-400 flex-shrink-0"/>
+                    <span className="text-xs text-gray-400 truncate">
+                      {[c.address, c.neighborhood, c.city].filter(Boolean).join(', ')}
+                    </span>
+                  </div>
+                )}
               </div>
-            )}
+              <div className="text-gray-300 flex-shrink-0 mt-1">›</div>
+            </div>
           </div>
         ))}
       </div>
@@ -213,8 +158,8 @@ export default function Clientes() {
                 className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
             </div>
             <button onClick={criarCliente} disabled={salvandoNovo}
-              className="w-full bg-primary text-white rounded-2xl py-4 font-bold disabled:opacity-60 flex items-center justify-center gap-2">
-              <Save size={18}/>{salvandoNovo ? 'Salvando...' : 'Cadastrar Cliente'}
+              className="w-full bg-primary text-white rounded-2xl py-4 font-bold disabled:opacity-60">
+              {salvandoNovo ? 'Salvando...' : 'Cadastrar Cliente'}
             </button>
           </div>
         </div>
