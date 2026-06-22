@@ -19,6 +19,7 @@ export default function OrcamentoDetalhe() {
 
   const [editGarantia, setEditGarantia] = useState(false)
   const [garantia, setGarantia] = useState('')
+  const [editDiag, setEditDiag] = useState(false)
   const [diag, setDiag] = useState('')
   const [editDesc, setEditDesc] = useState(false)
   const [desc, setDesc] = useState('')
