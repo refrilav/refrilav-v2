@@ -29,15 +29,11 @@ export default function Orcamento() {
         .select('*, clients(name, phone, address, neighborhood, city, cpf)')
         .eq('id', token)
         .single()
-
       if (!o) { setNotFound(true); setLoading(false); return }
-
       const { data: p } = await supabase
         .from('quote_parts').select('*').eq('quote_id', token).range(0, 9999)
-
       const { data: cfg } = await supabase
         .from('settings').select('*').single()
-
       setDados(o)
       setPecas(p || [])
       setEmpresa(cfg || {})
@@ -82,13 +78,13 @@ export default function Orcamento() {
 
   const card = {background:'white', borderRadius:16, padding:20, marginBottom:12, boxShadow:'0 1px 3px rgba(0,0,0,0.08)'}
   const label = {margin:'0 0 12px', fontSize:11, fontWeight:600, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.05em'}
+  const textoLivre = {margin:0, fontSize:13, color:'#374151', lineHeight:1.6, whiteSpace:'pre-line'}
 
   return (
     <>
       <style>{`
         @media print {
           .no-print { display: none !important; }
-          .print-only { display: block !important; }
           body { background: white !important; }
         }
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
@@ -98,7 +94,7 @@ export default function Orcamento() {
       <div style={{minHeight:'100vh', background:'#f9fafb', padding:'24px 16px'}}>
         <div style={{maxWidth:480, margin:'0 auto'}}>
 
-          {/* Ações — só na tela */}
+          {/* Ações */}
           <div className="no-print" style={{display:'flex', gap:8, marginBottom:16}}>
             <button onClick={() => window.print()}
               style={{flex:1, background:'#1B2A4A', color:'white', border:'none', borderRadius:12, padding:'12px', fontWeight:600, fontSize:14, cursor:'pointer'}}>
@@ -139,9 +135,24 @@ export default function Orcamento() {
             <p style={label}>Serviço</p>
             <div style={{display:'flex',flexDirection:'column',gap:8}}>
               {equip && <div style={{display:'flex',justifyContent:'space-between'}}><span style={{fontSize:13,color:'#6b7280'}}>Equipamento</span><span style={{fontSize:13,fontWeight:500,color:'#111827'}}>{equip}</span></div>}
-              {dados.problem && <div style={{paddingTop:8,borderTop:'1px solid #f9fafb'}}><p style={{margin:'0 0 4px',fontSize:12,color:'#9ca3af'}}>Problema</p><p style={{margin:0,fontSize:13,color:'#374151',lineHeight:1.5}}>{dados.problem}</p></div>}
-              {dados.diagnosis && <div style={{paddingTop:8,borderTop:'1px solid #f9fafb'}}><p style={{margin:'0 0 4px',fontSize:12,color:'#9ca3af'}}>Diagnóstico</p><p style={{margin:0,fontSize:13,color:'#374151',lineHeight:1.5}}>{dados.diagnosis}</p></div>}
-              {dados.services_description && <div style={{paddingTop:8,borderTop:'1px solid #f9fafb'}}><p style={{margin:'0 0 4px',fontSize:12,color:'#9ca3af'}}>Serviços incluídos</p><p style={{margin:0,fontSize:13,color:'#374151',lineHeight:1.5}}>{dados.services_description}</p></div>}
+              {dados.problem && (
+                <div style={{paddingTop:8,borderTop:'1px solid #f9fafb'}}>
+                  <p style={{margin:'0 0 4px',fontSize:12,color:'#9ca3af'}}>Problema</p>
+                  <p style={textoLivre}>{dados.problem}</p>
+                </div>
+              )}
+              {dados.diagnosis && (
+                <div style={{paddingTop:8,borderTop:'1px solid #f9fafb'}}>
+                  <p style={{margin:'0 0 4px',fontSize:12,color:'#9ca3af'}}>Diagnóstico</p>
+                  <p style={textoLivre}>{dados.diagnosis}</p>
+                </div>
+              )}
+              {dados.services_description && (
+                <div style={{paddingTop:8,borderTop:'1px solid #f9fafb'}}>
+                  <p style={{margin:'0 0 4px',fontSize:12,color:'#9ca3af'}}>Serviços incluídos</p>
+                  <p style={textoLivre}>{dados.services_description}</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -180,18 +191,25 @@ export default function Orcamento() {
             )}
           </div>
 
-          {/* Garantia — só aparece se preenchida */}
+          {/* Garantia */}
           {dados.warranty_text && (
             <div style={card}>
               <p style={label}>Garantia</p>
-              <p style={{margin:0, fontSize:13, color:'#374151', lineHeight:1.6}}>{dados.warranty_text}</p>
+              <p style={textoLivre}>{dados.warranty_text}</p>
             </div>
           )}
 
-          {/* Status aprovado/recusado */}
+          {/* Texto da empresa */}
+          {empresa.quote_text && (
+            <div style={card}>
+              <p style={textoLivre}>{empresa.quote_text}</p>
+            </div>
+          )}
+
+          {/* Status */}
           {resposta === 'aprovado' && (
             <div style={{background:'#f0fdf4',border:'1px solid #86efac',borderRadius:16,padding:20,marginBottom:12,textAlign:'center'}}>
-              <p style={{margin:'0 0 4px',fontSize:16,fontWeight:700,color:'#15803d'}}>✓ Orçamento Aprovado</p>
+              <p style={{margin:'0 0 4px',fontSize:16,fontWeight:700,color:'#15803d'}}>✔ Orçamento Aprovado</p>
               <p style={{margin:0,fontSize:13,color:'#16a34a'}}>Entraremos em contato em breve.</p>
             </div>
           )}
@@ -202,7 +220,7 @@ export default function Orcamento() {
             </div>
           )}
 
-          {/* Botões aprovar/recusar — só na tela, não no PDF */}
+          {/* Botões aprovar/recusar */}
           {!resposta && (
             <div className="no-print" style={{display:'flex',gap:10,marginBottom:24}}>
               <button onClick={() => responder('recusado')} disabled={respondendo}
@@ -211,7 +229,7 @@ export default function Orcamento() {
               </button>
               <button onClick={() => responder('aprovado')} disabled={respondendo}
                 style={{flex:1,background:'#16a34a',color:'white',border:'none',borderRadius:16,padding:16,fontWeight:700,fontSize:15,cursor:'pointer'}}>
-                {respondendo ? '...' : '✓ Aprovar'}
+                {respondendo ? '...' : '✔ Aprovar'}
               </button>
             </div>
           )}
