@@ -6,13 +6,11 @@ function fmt(valor) {
   if (!valor && valor !== 0) return 'R$ 0,00'
   return 'R$ ' + Number(valor).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')
 }
-
 function fmtData(str) {
   if (!str) return '—'
   const [y, m, d] = str.substring(0, 10).split('-')
   return `${d}/${m}/${y}`
 }
-
 function fmtHora(str) {
   if (!str) return ''
   return str.substring(11, 16)
@@ -34,32 +32,25 @@ export default function Recibo() {
       const { data: s } = await supabase
         .from('services')
         .select('*, clients(name, phone, address, neighborhood, city, cpf)')
-        .eq('id', token)
-        .single()
-
+        .eq('id', token).single()
       if (s) { servico = s; tipo = 'service' }
 
       if (!servico) {
         const { data: os } = await supabase
           .from('workshop_orders')
           .select('*, clients(name, phone, address, neighborhood, city, cpf)')
-          .eq('id', token)
-          .single()
+          .eq('id', token).single()
         if (os) { servico = os; tipo = 'workshop' }
       }
 
       if (!servico) { setNotFound(true); setLoading(false); return }
 
       const { data: p } = await supabase
-        .from('service_parts')
-        .select('*')
+        .from('service_parts').select('*')
         .eq(tipo === 'service' ? 'service_id' : 'workshop_order_id', token)
         .range(0, 9999)
 
-      const { data: cfg } = await supabase
-        .from('settings')
-        .select('*')
-        .single()
+      const { data: cfg } = await supabase.from('settings').select('*').single()
 
       setDados({ ...servico, _tipo: tipo })
       setPecas(p || [])
@@ -71,7 +62,7 @@ export default function Recibo() {
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"/>
     </div>
   )
 
@@ -90,19 +81,12 @@ export default function Recibo() {
   const maoDeObra = parseFloat(dados.labor_price || 0)
   const totalGeral = parseFloat(dados.total_price || 0) || (totalPecas + maoDeObra)
   const dataServico = dados.finished_at || dados.scheduled_at || dados.created_at
-
-  // Lógica: mostrar discriminado só se tiver peças OU mão de obra preenchidos
-  const temDiscriminado = totalPecas > 0 || maoDeObra > 0
-  // Se só tem total_price sem peças e sem mão de obra → mostra só o total
-  const mostrarSomenteTotal = !temDiscriminado && totalGeral > 0
-
   const nomeEmpresa = empresa.company_name || 'Refrilav Assistência Técnica'
   const telefoneEmpresa = empresa.phone || ''
   const enderecoEmpresa = empresa.address || ''
 
   return (
     <>
-      {/* Estilos de impressão */}
       <style>{`
         @media print {
           .no-print { display: none !important; }
@@ -114,18 +98,15 @@ export default function Recibo() {
       <div className="min-h-screen bg-gray-50 py-6 px-4">
         <div className="max-w-md mx-auto">
 
-          {/* Botão imprimir */}
-          <button
-            onClick={() => window.print()}
-            className="no-print w-full bg-navy text-white rounded-2xl py-3.5 font-semibold text-sm mb-4 flex items-center justify-center gap-2"
-          >
+          <button onClick={() => window.print()}
+            className="no-print w-full bg-navy text-white rounded-2xl py-3.5 font-semibold text-sm mb-4 flex items-center justify-center gap-2">
             <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
             </svg>
             Imprimir / Salvar PDF
           </button>
 
-          {/* Cabeçalho empresa */}
+          {/* Cabeçalho */}
           <div className="print-card bg-white rounded-2xl p-6 shadow-sm mb-4 text-center">
             <img src="/logo.png" alt="Refrilav" className="h-14 object-contain mx-auto mb-3"
               onError={e => { e.target.style.display='none' }}/>
@@ -172,19 +153,19 @@ export default function Recibo() {
               {dados.diagnosis && (
                 <div className="pt-2 border-t border-gray-50">
                   <p className="text-xs text-gray-500 mb-1">Diagnóstico</p>
-                  <p className="text-xs text-gray-700 leading-relaxed">{dados.diagnosis}</p>
+                  <p className="text-xs text-gray-700 leading-relaxed" style={{whiteSpace:'pre-line'}}>{dados.diagnosis}</p>
                 </div>
               )}
               {dados.work_done && (
                 <div className="pt-2 border-t border-gray-50">
                   <p className="text-xs text-gray-500 mb-1">Trabalho realizado</p>
-                  <p className="text-xs text-gray-700 leading-relaxed">{dados.work_done}</p>
+                  <p className="text-xs text-gray-700 leading-relaxed" style={{whiteSpace:'pre-line'}}>{dados.work_done}</p>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Peças — só mostra se tiver */}
+          {/* Peças */}
           {pecas.length > 0 && (
             <div className="print-card bg-white rounded-2xl p-5 shadow-sm mb-4">
               <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Peças</h2>
@@ -207,8 +188,7 @@ export default function Recibo() {
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Valor</h2>
             {(() => {
               const maoVal = parseFloat(dados.labor_price || 0)
-              const pecasComValor = totalPecas > 0
-              const discriminar = pecasComValor && maoVal > 0
+              const discriminar = totalPecas > 0 && maoVal > 0
               const total = parseFloat(dados.total_price || 0) || (totalPecas + maoVal)
               if (discriminar) return (
                 <div className="space-y-2">
@@ -227,11 +207,11 @@ export default function Recibo() {
             {dados.payment_method && <p className="text-xs text-gray-400 text-right mt-1">{dados.payment_method}</p>}
           </div>
 
-          {/* Assinatura se houver */}
+          {/* Assinatura */}
           {dados.auth_signature && (
             <div className="print-card bg-white rounded-2xl p-5 shadow-sm mb-4">
               <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Assinatura</h2>
-              <img src={dados.auth_signature} alt="Assinatura" className="w-full h-20 object-contain" />
+              <img src={dados.auth_signature} alt="Assinatura" className="w-full h-20 object-contain"/>
               {dados.auth_signer_name && (
                 <p className="text-xs text-gray-400 text-center mt-1">{dados.auth_signer_name}</p>
               )}
