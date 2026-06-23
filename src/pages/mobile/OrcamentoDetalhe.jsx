@@ -15,12 +15,13 @@ export default function OrcamentoDetalhe() {
   const [orc, setOrc] = useState(null)
   const [pecas, setPecas] = useState([])
   const [loading, setLoading] = useState(true)
-  const [salvando, setSalvando] = useState(false)
 
   const [editGarantia, setEditGarantia] = useState(false)
   const [garantia, setGarantia] = useState('')
   const [editDiag, setEditDiag] = useState(false)
   const [diag, setDiag] = useState('')
+  const [editProblema, setEditProblema] = useState(false)
+  const [problema, setProblema] = useState('')
   const [editDesc, setEditDesc] = useState(false)
   const [desc, setDesc] = useState('')
   const [editVal, setEditVal] = useState(false)
@@ -40,12 +41,17 @@ export default function OrcamentoDetalhe() {
       .from('quote_parts').select('*').eq('quote_id', id).range(0, 9999)
     setOrc(o); setPecas(p||[])
     setDiag(o?.diagnosis || '')
+    setProblema(o?.problem || '')
     setDesc(o?.services_description || '')
     setMao(o?.labor_price || '')
     setGarantia(o?.warranty_text || '')
     setLoading(false)
   }
 
+  async function salvarProblema() {
+    await supabase.from('quotes').update({ problem: problema }).eq('id', id)
+    setEditProblema(false); carregar()
+  }
   async function salvarDiag() {
     await supabase.from('quotes').update({ diagnosis: diag }).eq('id', id)
     setEditDiag(false); carregar()
@@ -139,7 +145,30 @@ export default function OrcamentoDetalhe() {
               <p className="text-sm font-semibold text-gray-900">{cli.name}</p>
               {cli.phone && <p className="text-xs text-gray-500">{cli.phone}</p>}
               {equip && <p className="text-xs text-gray-500">{equip}</p>}
-              {orc.problem && <p className="text-xs text-gray-400 mt-1">{orc.problem}</p>}
+            </div>
+          </div>
+
+          {/* Problema */}
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Problema relatado</span>
+              {podeEditar && !editProblema && <button onClick={()=>setEditProblema(true)} className="p-1.5 rounded-lg bg-gray-100"><Edit2 size={14} className="text-gray-500"/></button>}
+            </div>
+            <div className="px-4 py-3">
+              {editProblema ? (
+                <div className="space-y-2">
+                  <textarea value={problema} onChange={e=>setProblema(e.target.value)} rows={3}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary resize-none" autoFocus/>
+                  <div className="flex gap-2">
+                    <button onClick={salvarProblema} className="flex-1 bg-primary text-white rounded-xl py-2.5 text-sm font-semibold">Salvar</button>
+                    <button onClick={()=>setEditProblema(false)} className="px-4 bg-gray-100 text-gray-600 rounded-xl py-2.5 text-sm">Cancelar</button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-700" style={{whiteSpace:'pre-line'}}>
+                  {orc.problem || <span className="text-gray-300 italic">Nenhum problema descrito</span>}
+                </p>
+              )}
             </div>
           </div>
 
@@ -159,11 +188,11 @@ export default function OrcamentoDetalhe() {
                     <button onClick={()=>setEditDiag(false)} className="px-4 bg-gray-100 text-gray-600 rounded-xl py-2.5 text-sm">Cancelar</button>
                   </div>
                 </div>
-              ) : <p className="text-sm text-gray-700">{orc.diagnosis || <span className="text-gray-300 italic">Nenhum diagnóstico</span>}</p>}
+              ) : <p className="text-sm text-gray-700" style={{whiteSpace:'pre-line'}}>{orc.diagnosis || <span className="text-gray-300 italic">Nenhum diagnóstico</span>}</p>}
             </div>
           </div>
 
-          {/* Descrição dos serviços */}
+          {/* Serviços incluídos */}
           <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
               <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Serviços incluídos</span>
@@ -179,7 +208,7 @@ export default function OrcamentoDetalhe() {
                     <button onClick={()=>setEditDesc(false)} className="px-4 bg-gray-100 text-gray-600 rounded-xl py-2.5 text-sm">Cancelar</button>
                   </div>
                 </div>
-              ) : <p className="text-sm text-gray-700">{orc.services_description || <span className="text-gray-300 italic">Nenhuma descrição</span>}</p>}
+              ) : <p className="text-sm text-gray-700" style={{whiteSpace:'pre-line'}}>{orc.services_description || <span className="text-gray-300 italic">Nenhuma descrição</span>}</p>}
             </div>
           </div>
 
