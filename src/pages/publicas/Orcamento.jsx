@@ -26,7 +26,7 @@ export default function Orcamento() {
     async function buscar() {
       const { data: o } = await supabase
         .from('quotes')
-        .select('*, clients(name, phone, address, neighborhood, city, cpf)')
+        .select('*, clients(name, phone, address, neighborhood, city, document)')
         .eq('id', token)
         .single()
       if (!o) { setNotFound(true); setLoading(false); return }
@@ -135,7 +135,7 @@ export default function Orcamento() {
           <div style={card}>
             <p style={label}>Cliente</p>
             <p style={{margin:'0 0 4px',fontSize:14,fontWeight:600,color:'#111827'}}>{cliente.name || '—'}</p>
-            {cliente.cpf && <p style={{margin:'0 0 2px',fontSize:12,color:'#6b7280'}}>CPF/CNPJ: {cliente.cpf}</p>}
+            {cliente.document && <p style={{margin:'0 0 2px',fontSize:12,color:'#6b7280'}}>CPF/CNPJ: {cliente.document}</p>}
             {cliente.phone && <p style={{margin:'0 0 2px',fontSize:12,color:'#6b7280'}}>{cliente.phone}</p>}
             {(cliente.address||cliente.neighborhood) && <p style={{margin:0,fontSize:12,color:'#6b7280'}}>{[cliente.address,cliente.neighborhood,cliente.city].filter(Boolean).join(', ')}</p>}
           </div>

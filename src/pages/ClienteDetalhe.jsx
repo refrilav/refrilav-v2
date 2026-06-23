@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import {
-  ChevronLeft, Edit2, Save, X, Phone, MapPin, User,
-  Calendar, FileText, TrendingUp, CheckCircle, Clock, Package
-} from 'lucide-react'
+import { ChevronLeft, Edit2, Save, Phone, MapPin, User, FileText } from 'lucide-react'
 
 function fmt(v) {
   if (!v && v !== 0) return 'R$ 0,00'
@@ -46,7 +43,7 @@ export default function ClienteDetalhe() {
       supabase.from('quotes').select('id, created_at, status, total_price, equipment, brand, model').eq('client_id', id).order('created_at', { ascending: false }).range(0, 9999),
     ])
     setCliente(c)
-    setForm({ name: c?.name||'', phone: c?.phone||'', address: c?.address||'', neighborhood: c?.neighborhood||'', city: c?.city||'' })
+    setForm({ name: c?.name||'', phone: c?.phone||'', document: c?.document||'', address: c?.address||'', neighborhood: c?.neighborhood||'', city: c?.city||'' })
     setAtendimentos(a || [])
     setOrcamentos(o || [])
     setLoading(false)
@@ -54,7 +51,14 @@ export default function ClienteDetalhe() {
 
   async function salvar() {
     setSalvando(true)
-    await supabase.from('clients').update(form).eq('id', id)
+    await supabase.from('clients').update({
+      name: form.name,
+      phone: form.phone || null,
+      document: form.document || null,
+      address: form.address || null,
+      neighborhood: form.neighborhood || null,
+      city: form.city || null,
+    }).eq('id', id)
     setSalvando(false)
     setEditando(false)
     carregar()
@@ -69,11 +73,9 @@ export default function ClienteDetalhe() {
     <div className="min-h-screen flex items-center justify-center text-gray-400 text-sm">Cliente não encontrado</div>
   )
 
-  // Métricas
   const totalGasto = atendimentos.filter(a => a.status === 'concluido').reduce((s,a) => s + Number(a.total_price||0), 0)
   const totalAtendimentos = atendimentos.length
   const totalConcluidos = atendimentos.filter(a => a.status === 'concluido').length
-  const ultimoAtendimento = atendimentos[0]
   const orcamentosAprovados = orcamentos.filter(o => o.status === 'aprovado').length
 
   return (
@@ -97,6 +99,7 @@ export default function ClienteDetalhe() {
           <div>
             <h1 className="text-xl font-bold">{cliente.name}</h1>
             {cliente.phone && <p className="text-blue-200 text-sm mt-0.5">{cliente.phone}</p>}
+            {cliente.document && <p className="text-blue-300 text-xs mt-0.5">CPF/CNPJ: {cliente.document}</p>}
             {(cliente.neighborhood || cliente.city) && (
               <p className="text-blue-300 text-xs mt-0.5">{[cliente.neighborhood, cliente.city].filter(Boolean).join(', ')}</p>
             )}
@@ -104,7 +107,7 @@ export default function ClienteDetalhe() {
         </div>
       </div>
 
-      {/* Cards de métricas */}
+      {/* Cards métricas */}
       <div className="px-4 -mt-3">
         <div className="grid grid-cols-3 gap-2">
           <div className="bg-white rounded-2xl p-3 shadow-sm text-center">
@@ -124,7 +127,7 @@ export default function ClienteDetalhe() {
 
       <div className="px-4 mt-4 space-y-4">
 
-        {/* Formulário de edição */}
+        {/* Formulário edição */}
         {editando && (
           <div className="bg-white rounded-2xl shadow-sm p-4 space-y-3">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Editar dados</p>
@@ -132,6 +135,8 @@ export default function ClienteDetalhe() {
               placeholder="Nome" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
             <input value={form.phone} onChange={e => setForm(f=>({...f,phone:e.target.value}))}
               placeholder="Telefone" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
+            <input value={form.document} onChange={e => setForm(f=>({...f,document:e.target.value}))}
+              placeholder="CPF ou CNPJ" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
             <input value={form.address} onChange={e => setForm(f=>({...f,address:e.target.value}))}
               placeholder="Endereço" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
             <div className="grid grid-cols-2 gap-2">
@@ -158,13 +163,19 @@ export default function ClienteDetalhe() {
                   <span className="text-sm text-gray-700">{cliente.phone}</span>
                 </div>
               )}
+              {cliente.document && (
+                <div className="flex items-center gap-3">
+                  <FileText size={15} className="text-gray-400 flex-shrink-0"/>
+                  <span className="text-sm text-gray-700">CPF/CNPJ: {cliente.document}</span>
+                </div>
+              )}
               {cliente.address && (
                 <div className="flex items-center gap-3">
                   <MapPin size={15} className="text-gray-400 flex-shrink-0"/>
                   <span className="text-sm text-gray-700">{[cliente.address, cliente.neighborhood, cliente.city].filter(Boolean).join(', ')}</span>
                 </div>
               )}
-              {!cliente.phone && !cliente.address && (
+              {!cliente.phone && !cliente.address && !cliente.document && (
                 <p className="text-sm text-gray-400 italic">Nenhum dado adicional cadastrado</p>
               )}
             </div>
@@ -184,7 +195,7 @@ export default function ClienteDetalhe() {
           ))}
         </div>
 
-        {/* Lista de atendimentos */}
+        {/* Atendimentos */}
         {aba === 'atendimentos' && (
           <div className="space-y-2 pb-6">
             {atendimentos.length === 0 ? (
@@ -204,9 +215,7 @@ export default function ClienteDetalhe() {
                       {equip && <p className="text-sm font-medium text-gray-800 truncate">{equip}</p>}
                       <p className="text-xs text-gray-400 mt-1">{fmtData(a.scheduled_at)}</p>
                     </div>
-                    {a.total_price > 0 && (
-                      <p className="text-sm font-bold text-navy flex-shrink-0">{fmt(a.total_price)}</p>
-                    )}
+                    {a.total_price > 0 && <p className="text-sm font-bold text-navy flex-shrink-0">{fmt(a.total_price)}</p>}
                   </div>
                 </div>
               )
@@ -220,7 +229,7 @@ export default function ClienteDetalhe() {
           </div>
         )}
 
-        {/* Lista de orçamentos */}
+        {/* Orçamentos */}
         {aba === 'orcamentos' && (
           <div className="space-y-2 pb-6">
             {orcamentos.length === 0 ? (
@@ -244,9 +253,7 @@ export default function ClienteDetalhe() {
                       {equip && <p className="text-sm font-medium text-gray-800 truncate">{equip}</p>}
                       <p className="text-xs text-gray-400 mt-1">{fmtData(o.created_at)}</p>
                     </div>
-                    {o.total_price > 0 && (
-                      <p className="text-sm font-bold text-navy flex-shrink-0">{fmt(o.total_price)}</p>
-                    )}
+                    {o.total_price > 0 && <p className="text-sm font-bold text-navy flex-shrink-0">{fmt(o.total_price)}</p>}
                   </div>
                 </div>
               )

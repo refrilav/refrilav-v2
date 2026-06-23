@@ -12,7 +12,7 @@ function exportarExcel(dados, nomeArquivo) {
   })
 }
 
-const FORM_VAZIO = { name:'', phone:'', address:'', neighborhood:'', city:'' }
+const FORM_VAZIO = { name:'', phone:'', document:'', address:'', neighborhood:'', city:'' }
 
 export default function Clientes() {
   const navigate = useNavigate()
@@ -34,7 +34,7 @@ export default function Clientes() {
   async function buscarTodos() {
     setLoading(true)
     const { data } = await supabase.from('clients')
-      .select('id, name, phone, address, neighborhood, city')
+      .select('id, name, phone, document, address, neighborhood, city')
       .order('name', { ascending: true }).range(0, 9999)
     setClientes(data || [])
     setLoading(false)
@@ -43,7 +43,7 @@ export default function Clientes() {
   async function buscarPorTermo(termo) {
     setLoading(true)
     const { data } = await supabase.from('clients')
-      .select('id, name, phone, address, neighborhood, city')
+      .select('id, name, phone, document, address, neighborhood, city')
       .or(`name.ilike.%${termo}%,phone.ilike.%${termo}%,address.ilike.%${termo}%,neighborhood.ilike.%${termo}%`)
       .order('name', { ascending: true }).range(0, 9999)
     setClientes(data || [])
@@ -56,6 +56,7 @@ export default function Clientes() {
     await supabase.from('clients').insert({
       name: formNovo.name.trim(),
       phone: formNovo.phone || null,
+      document: formNovo.document || null,
       address: formNovo.address || null,
       neighborhood: formNovo.neighborhood || null,
       city: formNovo.city || null,
@@ -77,8 +78,8 @@ export default function Clientes() {
               <Plus size={13}/> Novo
             </button>
             <button onClick={() => exportarExcel(clientes.map(c => ({
-              Nome: c.name||'', Telefone: c.phone||'', Endereço: c.address||'',
-              Bairro: c.neighborhood||'', Cidade: c.city||'',
+              Nome: c.name||'', Telefone: c.phone||'', 'CPF/CNPJ': c.document||'',
+              Endereço: c.address||'', Bairro: c.neighborhood||'', Cidade: c.city||'',
             })), 'clientes.xlsx')}
               className="flex items-center gap-1.5 bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">
               <Download size={13}/> Excel
@@ -117,6 +118,7 @@ export default function Clientes() {
                     <span className="text-xs text-gray-500 truncate">{c.phone}</span>
                   </div>
                 )}
+                {c.document && <span className="text-xs text-gray-400">{c.document}</span>}
                 {(c.address || c.neighborhood || c.city) && (
                   <div className="flex items-center gap-1 mt-0.5">
                     <MapPin size={11} className="text-gray-400 flex-shrink-0"/>
@@ -145,6 +147,9 @@ export default function Clientes() {
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
             <input value={formNovo.phone} onChange={e => setFormNovo(f=>({...f,phone:e.target.value}))}
               placeholder="Telefone"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
+            <input value={formNovo.document} onChange={e => setFormNovo(f=>({...f,document:e.target.value}))}
+              placeholder="CPF ou CNPJ (opcional)"
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
             <input value={formNovo.address} onChange={e => setFormNovo(f=>({...f,address:e.target.value}))}
               placeholder="Endereço"
