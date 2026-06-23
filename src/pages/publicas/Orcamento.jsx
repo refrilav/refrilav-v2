@@ -38,9 +38,15 @@ export default function Orcamento() {
       setPecas(p || [])
       setEmpresa(cfg || {})
       if (o.status && o.status !== 'pendente') setResposta(o.status)
+      // Muda o título da aba/PDF para "Orçamento - Nome do Cliente"
+      if (o.clients?.name) {
+        document.title = `Orçamento - ${o.clients.name}`
+      }
       setLoading(false)
     }
     buscar()
+    // Restaura título ao sair
+    return () => { document.title = 'Refrilav Gestão' }
   }, [token])
 
   async function responder(status) {
@@ -83,9 +89,13 @@ export default function Orcamento() {
   return (
     <>
       <style>{`
+        @page {
+          margin: 0;
+        }
         @media print {
           .no-print { display: none !important; }
-          body { background: white !important; }
+          body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          body > div { padding: 16px !important; }
         }
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
         @keyframes spin { to { transform: rotate(360deg) } }
@@ -125,7 +135,7 @@ export default function Orcamento() {
           <div style={card}>
             <p style={label}>Cliente</p>
             <p style={{margin:'0 0 4px',fontSize:14,fontWeight:600,color:'#111827'}}>{cliente.name || '—'}</p>
-            {cliente.cpf && <p style={{margin:'0 0 2px',fontSize:12,color:'#6b7280'}}>CPF: {cliente.cpf}</p>}
+            {cliente.cpf && <p style={{margin:'0 0 2px',fontSize:12,color:'#6b7280'}}>CPF/CNPJ: {cliente.cpf}</p>}
             {cliente.phone && <p style={{margin:'0 0 2px',fontSize:12,color:'#6b7280'}}>{cliente.phone}</p>}
             {(cliente.address||cliente.neighborhood) && <p style={{margin:0,fontSize:12,color:'#6b7280'}}>{[cliente.address,cliente.neighborhood,cliente.city].filter(Boolean).join(', ')}</p>}
           </div>
