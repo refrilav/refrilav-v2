@@ -36,7 +36,6 @@ export default function AtendimentoDetalhe() {
   const [trab, setTrab] = useState('')
   const [editVal, setEditVal] = useState(false)
   const [mao, setMao] = useState('')
-  const [totalDireto, setTotalDireto] = useState('')
   const [editHorario, setEditHorario] = useState(false)
   const [novoHorario, setNovoHorario] = useState('')
   const [novaDuracao, setNovaDuracao] = useState(60)
@@ -79,16 +78,13 @@ export default function AtendimentoDetalhe() {
     if (!window.confirm('Excluir este atendimento? Esta ação não pode ser desfeita.')) return
     setSalvando(true)
     try {
-      // Remove todas as dependências antes
       await supabase.from('service_parts').delete().eq('service_id', id)
       await supabase.from('service_photos').delete().eq('service_id', id)
       await supabase.from('receivables').delete().eq('service_id', id)
       await supabase.from('reviews').delete().eq('service_id', id)
-      // Desvincula OS da oficina (não deleta, só remove o vínculo)
       await supabase.from('workshop_orders').update({ service_id: null }).eq('service_id', id)
       await supabase.from('quotes').update({ service_id: null }).eq('service_id', id)
       await supabase.from('services').update({ workshop_order_id: null }).eq('id', id)
-      // Agora deleta o atendimento
       const { error } = await supabase.from('services').delete().eq('id', id)
       if (error) throw error
       navigate('/atendimentos')
@@ -112,7 +108,6 @@ export default function AtendimentoDetalhe() {
     const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}T${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
     await supabase.from('services').update({ status: 'concluido', finished_at: ts }).eq('id', id)
 
-    // Descontar peças do estoque
     const { data: pecasUsadas } = await supabase.from('service_parts').select('stock_item_id, quantity, name').eq('service_id', id)
     for (const p of (pecasUsadas || [])) {
       if (!p.stock_item_id) continue
@@ -149,7 +144,6 @@ export default function AtendimentoDetalhe() {
   }
   async function salvarValores() {
     const val = parseFloat(String(mao).replace(',','.')) || 0
-    // Busca peças direto do banco para garantir valor atualizado
     const { data: pecasAtuais } = await supabase
       .from('service_parts').select('quantity, unit_price').eq('service_id', id)
     const totalPecas = (pecasAtuais || []).reduce((s,p) => s+(p.quantity*p.unit_price), 0)
@@ -173,21 +167,16 @@ export default function AtendimentoDetalhe() {
       .from('service_parts').select('quantity, unit_price').eq('service_id', id)
     const totalPecas = (pecasAtuais || []).reduce((s,p) => s+(p.quantity*p.unit_price), 0)
     const maoAtual = parseFloat(servico?.labor_price || 0)
-    await supabase.from('services').update({
-      total_price: totalPecas + maoAtual || null
-    }).eq('id', id)
+    await supabase.from('services').update({ total_price: totalPecas + maoAtual || null }).eq('id', id)
     setNovaPeca({description:'',quantity:1,unit_price:''}); setAddPeca(false); carregar()
   }
   async function removerPeca(pid) {
     await supabase.from('service_parts').delete().eq('id', pid)
-    // Recalcula total após remover
     const { data: pecasAtuais } = await supabase
       .from('service_parts').select('quantity, unit_price').eq('service_id', id)
     const totalPecas = (pecasAtuais || []).reduce((s,p) => s+(p.quantity*p.unit_price), 0)
     const maoAtual = parseFloat(servico?.labor_price || 0)
-    await supabase.from('services').update({
-      total_price: totalPecas + maoAtual || null
-    }).eq('id', id)
+    await supabase.from('services').update({ total_price: totalPecas + maoAtual || null }).eq('id', id)
     carregar()
   }
 
@@ -201,7 +190,8 @@ export default function AtendimentoDetalhe() {
   const cli = servico.clients || {}
   const st = STATUS_INFO[servico.status] || STATUS_INFO.agendado
   const tp = pecas.reduce((s,p)=>s+(p.quantity*p.unit_price),0)
-  const podeEditar = servico.status !== 'concluido' && servico.status !== 'cancelado'
+  // Permite editar sempre, exceto cancelado
+  const podeEditar = servico.status !== 'cancelado'
 
   return (
     <div style={{minHeight:'100dvh', display:'flex', flexDirection:'column', background:'#f9fafb'}}>
@@ -211,10 +201,7 @@ export default function AtendimentoDetalhe() {
         subtitulo={[servico.equipment,servico.brand,servico.model].filter(Boolean).join(' · ')}
         voltarPara={null}
         acoes={
-          <button
-            onClick={excluir}
-            className="flex items-center justify-center w-8 h-8 bg-white/10 rounded-full"
-          >
+          <button onClick={excluir} className="flex items-center justify-center w-8 h-8 bg-white/10 rounded-full">
             <Trash2 size={15} className="text-red-300" />
           </button>
         }
@@ -226,7 +213,6 @@ export default function AtendimentoDetalhe() {
         }
       />
 
-      {/* SCROLL */}
       <div style={{flex:1, overflowY:'auto', padding:'16px', display:'flex', flexDirection:'column', gap:'12px'}}>
 
         {/* Cliente */}
@@ -261,7 +247,6 @@ export default function AtendimentoDetalhe() {
             )}
           </div>
           <div className="divide-y divide-gray-50">
-            {/* Horário — editável */}
             <div className="px-4 py-3">
               {editHorario ? (
                 <div className="space-y-3">
@@ -321,7 +306,7 @@ export default function AtendimentoDetalhe() {
                   <button onClick={()=>setEditDiag(false)} className="px-4 bg-gray-100 text-gray-600 rounded-xl py-2.5 text-sm">Cancelar</button>
                 </div>
               </div>
-            ) : <p className="text-sm text-gray-700">{servico.diagnosis || <span className="text-gray-300 italic">Nenhum diagnóstico</span>}</p>}
+            ) : <p className="text-sm text-gray-700" style={{whiteSpace:'pre-line'}}>{servico.diagnosis || <span className="text-gray-300 italic">Nenhum diagnóstico</span>}</p>}
           </div>
         </div>
 
@@ -340,7 +325,7 @@ export default function AtendimentoDetalhe() {
                   <button onClick={()=>setEditTrab(false)} className="px-4 bg-gray-100 text-gray-600 rounded-xl py-2.5 text-sm">Cancelar</button>
                 </div>
               </div>
-            ) : <p className="text-sm text-gray-700">{servico.work_done || <span className="text-gray-300 italic">Nenhum trabalho registrado</span>}</p>}
+            ) : <p className="text-sm text-gray-700" style={{whiteSpace:'pre-line'}}>{servico.work_done || <span className="text-gray-300 italic">Nenhum trabalho registrado</span>}</p>}
           </div>
         </div>
 
@@ -434,9 +419,7 @@ export default function AtendimentoDetalhe() {
             <div className="divide-y divide-gray-50">
               {(() => {
                 const maoVal = parseFloat(servico.labor_price || 0)
-                const pecasComValor = tp > 0
-                // Discrimina só se tiver peças COM valor E mão de obra
-                const discriminar = pecasComValor && maoVal > 0
+                const discriminar = tp > 0 && maoVal > 0
                 const total = servico.total_price || (tp + maoVal)
                 if (discriminar) return (
                   <>
@@ -445,7 +428,6 @@ export default function AtendimentoDetalhe() {
                     <div className="flex justify-between px-4 py-3 bg-gray-50"><span className="text-sm font-bold">Total</span><span className="text-base font-bold text-navy">{fmt(total)}</span></div>
                   </>
                 )
-                // Caso contrário: só total
                 return <div className="flex justify-between px-4 py-3 bg-gray-50"><span className="text-sm font-bold">Total</span><span className="text-base font-bold text-navy">{fmt(total)}</span></div>
               })()}
             </div>
@@ -473,7 +455,7 @@ export default function AtendimentoDetalhe() {
         </button>
 
         {/* Recolher */}
-        {podeEditar && (
+        {podeEditar && servico.status !== 'concluido' && (
           <button onClick={()=>navigate(`/m/recolher/${id}`)} className="w-full bg-navy/10 text-navy rounded-2xl py-4 font-semibold text-sm flex items-center justify-center gap-2">
             <Package size={18}/> Recolher Equipamento
           </button>
@@ -486,41 +468,32 @@ export default function AtendimentoDetalhe() {
 
       </div>
 
-      {/* BOTÕES DE AÇÃO — sempre visíveis no rodapé */}
+      {/* Botões de ação */}
       <div style={{background:'white', borderTop:'1px solid #f3f4f6', padding:'16px', paddingBottom:'max(16px, env(safe-area-inset-bottom))'}}>
 
         {servico.status === 'agendado' && (
           <div style={{display:'flex', gap:'12px'}}>
-            <button
-              onClick={iniciar}
-              disabled={salvando}
-              style={{flex:1, background:'#1B2A4A', color:'white', border:'none', borderRadius:'16px', padding:'16px', fontWeight:'700', fontSize:'15px', cursor:'pointer'}}
-            >
+            <button onClick={iniciar} disabled={salvando}
+              style={{flex:1, background:'#1B2A4A', color:'white', border:'none', borderRadius:'16px', padding:'16px', fontWeight:'700', fontSize:'15px', cursor:'pointer'}}>
               {salvando ? '...' : '▶ Iniciar'}
             </button>
-            <button
-              onClick={concluir}
-              disabled={salvando}
-              style={{flex:1, background:'#16a34a', color:'white', border:'none', borderRadius:'16px', padding:'16px', fontWeight:'700', fontSize:'15px', cursor:'pointer'}}
-            >
-              {salvando ? '...' : '✓ Concluir'}
+            <button onClick={concluir} disabled={salvando}
+              style={{flex:1, background:'#16a34a', color:'white', border:'none', borderRadius:'16px', padding:'16px', fontWeight:'700', fontSize:'15px', cursor:'pointer'}}>
+              {salvando ? '...' : '✔ Concluir'}
             </button>
           </div>
         )}
 
         {servico.status === 'em_andamento' && (
-          <button
-            onClick={concluir}
-            disabled={salvando}
-            style={{width:'100%', background:'#16a34a', color:'white', border:'none', borderRadius:'16px', padding:'16px', fontWeight:'700', fontSize:'15px', cursor:'pointer'}}
-          >
-            {salvando ? 'Salvando...' : '✓ Concluir e Gerar Cobrança'}
+          <button onClick={concluir} disabled={salvando}
+            style={{width:'100%', background:'#16a34a', color:'white', border:'none', borderRadius:'16px', padding:'16px', fontWeight:'700', fontSize:'15px', cursor:'pointer'}}>
+            {salvando ? 'Salvando...' : '✔ Concluir e Gerar Cobrança'}
           </button>
         )}
 
         {servico.status === 'concluido' && (
           <div style={{background:'#f0fdf4', color:'#15803d', borderRadius:'16px', padding:'16px', textAlign:'center', fontWeight:'600', fontSize:'14px'}}>
-            ✓ Concluído em {fmtData(servico.finished_at)}
+            ✔ Concluído em {fmtData(servico.finished_at)}
           </div>
         )}
 
