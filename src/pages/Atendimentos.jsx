@@ -299,7 +299,7 @@ export default function Atendimentos() {
                 const dias = diasDesde(s.scheduled_at)
                 const urgencia = dias > 365 ? 'text-red-500' : dias > 180 ? 'text-orange-500' : 'text-yellow-600'
                 return (
-                  <div key={s.id} className="bg-white rounded-2xl p-4 shadow-sm">
+                  <div key={s.id} onClick={() => navigate(`/clientes/${s.clients?.id}`)} className="bg-white rounded-2xl p-4 shadow-sm cursor-pointer active:scale-[0.99] transition">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-gray-900 truncate">{s.clients?.name || '—'}</p>
