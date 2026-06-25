@@ -31,14 +31,14 @@ export default function Recibo() {
 
       const { data: s } = await supabase
         .from('services')
-        .select('*, clients(name, phone, address, neighborhood, city, cpf)')
+        .select('*, clients(name, phone, address, neighborhood, city, document)')
         .eq('id', token).single()
       if (s) { servico = s; tipo = 'service' }
 
       if (!servico) {
         const { data: os } = await supabase
           .from('workshop_orders')
-          .select('*, clients(name, phone, address, neighborhood, city, cpf)')
+          .select('*, clients(name, phone, address, neighborhood, city, document)')
           .eq('id', token).single()
         if (os) { servico = os; tipo = 'workshop' }
       }
@@ -55,9 +55,16 @@ export default function Recibo() {
       setDados({ ...servico, _tipo: tipo })
       setPecas(p || [])
       setEmpresa(cfg || {})
+
+      // Título da aba/PDF
+      if (servico.clients?.name) {
+        document.title = `Recibo - ${servico.clients.name}`
+      }
+
       setLoading(false)
     }
     buscar()
+    return () => { document.title = 'Refrilav Gestão' }
   }, [token])
 
   if (loading) return (
@@ -88,9 +95,10 @@ export default function Recibo() {
   return (
     <>
       <style>{`
+        @page { margin: 0; }
         @media print {
           .no-print { display: none !important; }
-          body { background: white !important; }
+          body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print-card { box-shadow: none !important; border: 1px solid #eee; }
         }
       `}</style>
@@ -124,7 +132,7 @@ export default function Recibo() {
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Cliente</h2>
             <div className="space-y-1.5">
               <p className="text-sm font-semibold text-gray-900">{cliente.name || '—'}</p>
-              {cliente.cpf && <p className="text-xs text-gray-500">CPF: {cliente.cpf}</p>}
+              {cliente.document && <p className="text-xs text-gray-500">CPF/CNPJ: {cliente.document}</p>}
               {cliente.phone && <p className="text-xs text-gray-500">{cliente.phone}</p>}
               {(cliente.address || cliente.neighborhood) && (
                 <p className="text-xs text-gray-500">
