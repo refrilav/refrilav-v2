@@ -1,16 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
-import { Search, User, ChevronDown, ChevronLeft, Plus, X, Save } from 'lucide-react'
+import { Search, User, ChevronLeft, Plus, X, Save } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
-const TIPOS = ['Instalação','Manutenção','Reparo','Limpeza','Visita Técnica','Orçamento']
-const EQUIPAMENTOS = ['Ar-condicionado','Lavadora','Bebedouro','Geladeira','Outro']
+const TIPOS_PADRAO = ['Instalação','Manutenção','Reparo','Limpeza','Higienização','Visita Técnica','Orçamento']
+const EQUIPAMENTOS_PADRAO = ['Ar-condicionado','Lavadora','Bebedouro','Geladeira','Outro']
 const DURACOES = [
   { label: '30 min', value: 30 },
   { label: '1 hora', value: 60 },
-  { label: '1h30', value: 90 },
-  { label: '2 horas', value: 120 },
-  { label: '3 horas', value: 180 },
-  { label: '4 horas', value: 240 },
+  { label: '1h30',   value: 90 },
+  { label: '2 horas',value: 120 },
+  { label: '3 horas',value: 180 },
+  { label: '4 horas',value: 240 },
 ]
 
 function addMinutos(datetimeStr, minutos) {
@@ -24,12 +24,39 @@ function addMinutos(datetimeStr, minutos) {
 }
 
 const FORM_CLIENTE_VAZIO = { name:'', phone:'', address:'', neighborhood:'', city:'' }
+const LS_TIPOS = 'refrilav_tipos_servico'
+const LS_EQUIP = 'refrilav_equipamentos'
+
+function carregarLista(key, padrao) {
+  try {
+    const s = localStorage.getItem(key)
+    if (s) {
+      const extra = JSON.parse(s)
+      const todos = [...padrao]
+      extra.forEach(e => { if (!todos.includes(e)) todos.push(e) })
+      return todos
+    }
+  } catch {}
+  return [...padrao]
+}
+function salvarExtra(key, padrao, lista) {
+  const extra = lista.filter(i => !padrao.includes(i))
+  localStorage.setItem(key, JSON.stringify(extra))
+}
 
 export default function ModalNovoAtendimento({ dataHora, onClose, onSalvo }) {
   const [busca, setBusca] = useState('')
   const [clientes, setClientes] = useState([])
   const [clienteSelecionado, setClienteSelecionado] = useState(null)
   const [mostrarResultados, setMostrarResultados] = useState(false)
+
+  const [tipos, setTipos] = useState(() => carregarLista(LS_TIPOS, TIPOS_PADRAO))
+  const [equipamentos, setEquipamentos] = useState(() => carregarLista(LS_EQUIP, EQUIPAMENTOS_PADRAO))
+  const [novoTipo, setNovoTipo] = useState('')
+  const [novoEquip, setNovoEquip] = useState('')
+  const [addTipo, setAddTipo] = useState(false)
+  const [addEquip, setAddEquip] = useState(false)
+
   const [form, setForm] = useState({
     scheduled_at: dataHora || '',
     duracao: 60,
@@ -41,7 +68,6 @@ export default function ModalNovoAtendimento({ dataHora, onClose, onSalvo }) {
   })
   const [salvando, setSalvando] = useState(false)
 
-  // Modal novo cliente
   const [modalCliente, setModalCliente] = useState(false)
   const [formCliente, setFormCliente] = useState(FORM_CLIENTE_VAZIO)
   const [salvandoCliente, setSalvandoCliente] = useState(false)
@@ -83,6 +109,28 @@ export default function ModalNovoAtendimento({ dataHora, onClose, onSalvo }) {
     setFormCliente(FORM_CLIENTE_VAZIO)
   }
 
+  function adicionarTipo() {
+    const t = novoTipo.trim()
+    if (!t || tipos.includes(t)) { setAddTipo(false); setNovoTipo(''); return }
+    const nova = [...tipos, t]
+    setTipos(nova)
+    salvarExtra(LS_TIPOS, TIPOS_PADRAO, nova)
+    setForm(f => ({ ...f, type: t }))
+    setNovoTipo('')
+    setAddTipo(false)
+  }
+
+  function adicionarEquip() {
+    const e = novoEquip.trim()
+    if (!e || equipamentos.includes(e)) { setAddEquip(false); setNovoEquip(''); return }
+    const nova = [...equipamentos, e]
+    setEquipamentos(nova)
+    salvarExtra(LS_EQUIP, EQUIPAMENTOS_PADRAO, nova)
+    setForm(f => ({ ...f, equipment: e }))
+    setNovoEquip('')
+    setAddEquip(false)
+  }
+
   function set(field, value) { setForm(f => ({ ...f, [field]: value })) }
 
   async function salvar() {
@@ -109,7 +157,6 @@ export default function ModalNovoAtendimento({ dataHora, onClose, onSalvo }) {
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
       <div className="flex-1 overflow-y-auto">
-        {/* Header */}
         <div className="flex items-center justify-between px-4 pt-12 pb-4 border-b border-gray-100 sticky top-0 bg-white">
           <button onClick={onClose} className="flex items-center gap-1 text-primary text-sm font-medium">
             <ChevronLeft size={20}/> Voltar
@@ -180,27 +227,61 @@ export default function ModalNovoAtendimento({ dataHora, onClose, onSalvo }) {
             </div>
           </div>
 
-          {/* Tipo */}
+          {/* Tipo de serviço */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Tipo de serviço</label>
-            <div className="relative">
-              <select value={form.type} onChange={e => set('type', e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm appearance-none focus:outline-none focus:border-primary bg-white">
-                {TIPOS.map(t => <option key={t}>{t}</option>)}
-              </select>
-              <ChevronDown size={16} className="absolute right-3 top-3.5 text-gray-400 pointer-events-none"/>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-medium text-gray-500">Tipo de serviço</label>
+              <button onClick={() => setAddTipo(!addTipo)}
+                className="flex items-center gap-1 text-xs text-primary font-semibold">
+                <Plus size={12}/> Novo tipo
+              </button>
+            </div>
+            {addTipo && (
+              <div className="flex gap-2 mb-2">
+                <input value={novoTipo} onChange={e => setNovoTipo(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && adicionarTipo()}
+                  placeholder="Ex: Recarga de gás"
+                  className="flex-1 border border-primary rounded-xl px-3 py-2 text-sm focus:outline-none" autoFocus/>
+                <button onClick={adicionarTipo} className="bg-primary text-white px-3 rounded-xl text-sm font-semibold">OK</button>
+                <button onClick={() => { setAddTipo(false); setNovoTipo('') }} className="bg-gray-100 text-gray-500 px-3 rounded-xl text-sm">✕</button>
+              </div>
+            )}
+            <div className="flex flex-wrap gap-2">
+              {tipos.map(t => (
+                <button key={t} onClick={() => set('type', t)}
+                  className={`px-3 py-2 rounded-xl text-xs font-medium border transition ${
+                    form.type === t ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-200'
+                  }`}>{t}</button>
+              ))}
             </div>
           </div>
 
           {/* Equipamento */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Equipamento</label>
-            <div className="relative">
-              <select value={form.equipment} onChange={e => set('equipment', e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm appearance-none focus:outline-none focus:border-primary bg-white">
-                {EQUIPAMENTOS.map(t => <option key={t}>{t}</option>)}
-              </select>
-              <ChevronDown size={16} className="absolute right-3 top-3.5 text-gray-400 pointer-events-none"/>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-medium text-gray-500">Equipamento</label>
+              <button onClick={() => setAddEquip(!addEquip)}
+                className="flex items-center gap-1 text-xs text-primary font-semibold">
+                <Plus size={12}/> Novo equipamento
+              </button>
+            </div>
+            {addEquip && (
+              <div className="flex gap-2 mb-2">
+                <input value={novoEquip} onChange={e => setNovoEquip(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && adicionarEquip()}
+                  placeholder="Ex: Purificador de água"
+                  className="flex-1 border border-primary rounded-xl px-3 py-2 text-sm focus:outline-none" autoFocus/>
+                <button onClick={adicionarEquip} className="bg-primary text-white px-3 rounded-xl text-sm font-semibold">OK</button>
+                <button onClick={() => { setAddEquip(false); setNovoEquip('') }} className="bg-gray-100 text-gray-500 px-3 rounded-xl text-sm">✕</button>
+              </div>
+            )}
+            <div className="flex flex-wrap gap-2">
+              {equipamentos.map(e => (
+                <button key={e} onClick={() => set('equipment', e)}
+                  className={`px-3 py-2 rounded-xl text-xs font-medium border transition ${
+                    form.equipment === e ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-200'
+                  }`}>{e}</button>
+              ))}
             </div>
           </div>
 
@@ -234,7 +315,7 @@ export default function ModalNovoAtendimento({ dataHora, onClose, onSalvo }) {
         </div>
       </div>
 
-      {/* Modal novo cliente — sobre o modal de atendimento */}
+      {/* Modal novo cliente */}
       {modalCliente && (
         <div className="fixed inset-0 bg-black/50 z-[60] flex items-end">
           <div className="bg-white w-full rounded-t-3xl p-5 space-y-4" style={{paddingBottom:'max(24px,env(safe-area-inset-bottom))'}}>
