@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, Wrench, FileText, Calendar, ClipboardList,
   LogOut, Settings, ChevronLeft, ChevronRight, Menu, X,
   TrendingUp, TrendingDown, Package, ShoppingCart, BarChart2, DollarSign,
-  ShoppingBag, Home, PieChart, ClipboardCheck, GitMerge
+  ShoppingBag, Home, PieChart, ClipboardCheck, GitMerge, Truck
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -22,6 +22,7 @@ const GRUPOS = [
     label: 'Comercial',
     items: [
       { path: '/clientes',     label: 'Clientes',       icon: Users           },
+      { path: '/fornecedores', label: 'Fornecedores',   icon: Truck           },
       { path: '/orcamentos',   label: 'Orçamentos',     icon: FileText        },
       { path: '/vendas',       label: 'Vendas Avulsas', icon: ShoppingBag     },
     ]

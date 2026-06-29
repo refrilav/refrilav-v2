@@ -17,6 +17,7 @@ import Configuracoes from './pages/Configuracoes'
 import PessoalPagar from './pages/PessoalPagar'
 import FluxoCaixa from './pages/FluxoCaixa'
 import Conciliacao from './pages/Conciliacao'
+import Fornecedores from './pages/Fornecedores'
 import Estoque from './pages/Estoque'
 import Compras from './pages/Compras'
 import CompraDetalhe from './pages/CompraDetalhe'
@@ -68,6 +69,7 @@ function AppRoutes() {
         <Route path="compras/:id" element={<CompraDetalhe />} />
         <Route path="clientes" element={<Clientes />} />
         <Route path="clientes/:id" element={<ClienteDetalhe />} />
+        <Route path="fornecedores" element={<Fornecedores />} />
         <Route path="dashboard" element={<Dashboard />} />
       </Route>
       <Route path="/m/atendimento/:id" element={<PrivateRoute><AtendimentoDetalhe /></PrivateRoute>} />
