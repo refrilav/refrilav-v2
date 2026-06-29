@@ -70,6 +70,8 @@ export default function Conciliacao() {
   const [modalVincular, setModalVincular] = useState(null)
   const [contasDisponiveis, setContasDisponiveis] = useState([])
   const [buscaConta, setBuscaConta] = useState('')
+  const [contaSelecionada, setContaSelecionada] = useState(null)
+  const [taxaVincular, setTaxaVincular] = useState('')
 
   // Modal criar conta
   const [modalCriar, setModalCriar] = useState(null) // transacao
@@ -146,17 +148,28 @@ export default function Conciliacao() {
     carregar()
   }
 
-  async function vincularConta(transacao, conta, tipo) {
+  async function vincularConta(transacao, conta, tipo, taxa = 0) {
     const update = tipo === 'receivable'
       ? { receivable_id: conta.id, status: 'conciliado', party_name: conta.description }
       : { payable_id: conta.id, status: 'conciliado', party_name: conta.description }
     await supabase.from('bank_transactions').update(update).eq('id', transacao.id)
     if (tipo === 'receivable') {
-      await supabase.from('receivables').update({ status: 'recebido', received_at: transacao.date, received_amount: transacao.amount }).eq('id', conta.id)
+      await supabase.from('receivables').update({
+        status: 'recebido',
+        received_at: transacao.date,
+        received_amount: transacao.amount,
+        discount: taxa > 0 ? taxa : null,
+      }).eq('id', conta.id)
     } else {
-      await supabase.from('payables').update({ status: 'pago', paid_at: transacao.date }).eq('id', conta.id)
+      await supabase.from('payables').update({
+        status: 'pago',
+        paid_at: transacao.date,
+        discount: taxa > 0 ? taxa : null,
+      }).eq('id', conta.id)
     }
     setModalVincular(null)
+    setContaSelecionada(null)
+    setTaxaVincular('')
     carregar()
   }
 
@@ -242,12 +255,14 @@ export default function Conciliacao() {
   async function buscarContas(transacao) {
     setModalVincular(transacao)
     setBuscaConta('')
+    setContaSelecionada(null)
+    setTaxaVincular('')
     const tipo = transacao.type === 'credit' ? 'receivables' : 'payables'
     const { data } = await supabase.from(tipo)
       .select('id, description, amount, due_date')
-      .eq('status', 'em_aberto')
+      .in('status', ['em_aberto', 'pendente'])
       .order('due_date', { ascending: false })
-      .range(0, 99)
+      .range(0, 199)
     setContasDisponiveis(data || [])
   }
 
@@ -558,36 +573,105 @@ export default function Conciliacao() {
       {/* Modal vincular */}
       {modalVincular && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
-          <div className="bg-white w-full rounded-t-3xl max-h-[80vh] flex flex-col">
+          <div className="bg-white w-full rounded-t-3xl max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100 flex-shrink-0">
               <div>
                 <h3 className="text-base font-bold text-navy">Vincular a {modalVincular.type==='credit'?'conta a receber':'conta a pagar'}</h3>
-                <p className="text-xs text-gray-400">{fmt(modalVincular.amount)} · {fmtData(modalVincular.date)}</p>
+                <p className="text-xs text-gray-400">Extrato: {fmt(modalVincular.amount)} · {fmtData(modalVincular.date)}</p>
               </div>
-              <button onClick={() => setModalVincular(null)}><X size={20} className="text-gray-400"/></button>
+              <button onClick={() => { setModalVincular(null); setContaSelecionada(null); setTaxaVincular('') }}>
+                <X size={20} className="text-gray-400"/>
+              </button>
             </div>
-            <div className="px-4 py-3 border-b border-gray-100 flex-shrink-0">
-              <input value={buscaConta} onChange={e => setBuscaConta(e.target.value)}
-                placeholder="Buscar..." className="w-full bg-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none"/>
-            </div>
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
-              {contasDisponiveis
-                .filter(c => !buscaConta || (c.description||'').toLowerCase().includes(buscaConta.toLowerCase()))
-                .map(c => (
-                  <button key={c.id} onClick={() => vincularConta(modalVincular, c, modalVincular.type==='credit'?'receivable':'payable')}
-                    className="w-full bg-gray-50 rounded-xl p-3 text-left hover:bg-gray-100 transition">
-                    <div className="flex justify-between items-center">
-                      <p className="text-sm font-medium text-gray-900 truncate flex-1">{c.description}</p>
-                      <p className="text-sm font-bold text-navy ml-2">{fmt(c.amount)}</p>
+
+            {/* Se já selecionou conta — mostrar confirmação com campo de taxa */}
+            {contaSelecionada ? (
+              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+                <div className="bg-gray-50 rounded-2xl p-4 space-y-2">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Conta selecionada</p>
+                  <p className="text-sm font-semibold text-gray-900">{contaSelecionada.description}</p>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Valor original</span>
+                    <span className="font-semibold text-navy">{fmt(contaSelecionada.amount)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Valor no extrato</span>
+                    <span className="font-semibold text-green-600">{fmt(modalVincular.amount)}</span>
+                  </div>
+                  {Number(contaSelecionada.amount) !== Number(modalVincular.amount) && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Diferença</span>
+                      <span className="font-semibold text-orange-500">{fmt(Math.abs(contaSelecionada.amount - modalVincular.amount))}</span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-0.5">Venc: {fmtData(c.due_date)}</p>
+                  )}
+                </div>
+
+                {Number(contaSelecionada.amount) !== Number(modalVincular.amount) && (
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 mb-1 block">
+                      Taxa / Desconto (diferença de {fmt(Math.abs(contaSelecionada.amount - modalVincular.amount))})
+                    </label>
+                    <input type="number" value={taxaVincular}
+                      onChange={e => setTaxaVincular(e.target.value)}
+                      placeholder="Ex: 9.60 (taxa do cartão)"
+                      step="0.01"
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
+                    <p className="text-xs text-gray-400 mt-1">Será registrado como desconto/taxa na conta</p>
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <button onClick={() => setContaSelecionada(null)}
+                    className="px-4 bg-gray-100 text-gray-600 rounded-xl py-3 text-sm">
+                    Voltar
                   </button>
-                ))
-              }
-              {contasDisponiveis.length === 0 && (
-                <p className="text-center text-gray-400 text-sm py-8">Nenhuma conta em aberto encontrada</p>
-              )}
-            </div>
+                  <button
+                    onClick={() => vincularConta(
+                      modalVincular,
+                      contaSelecionada,
+                      modalVincular.type==='credit' ? 'receivable' : 'payable',
+                      parseFloat(taxaVincular) || 0
+                    )}
+                    className="flex-1 bg-primary text-white rounded-xl py-3 text-sm font-semibold">
+                    Confirmar Conciliação
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="px-4 py-3 border-b border-gray-100 flex-shrink-0">
+                  <input value={buscaConta} onChange={e => setBuscaConta(e.target.value)}
+                    placeholder="Buscar..." className="w-full bg-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none"/>
+                </div>
+                <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+                  {contasDisponiveis
+                    .filter(c => !buscaConta || (c.description||'').toLowerCase().includes(buscaConta.toLowerCase()))
+                    .map(c => {
+                      const diff = Math.abs(Number(c.amount) - Number(modalVincular.amount))
+                      const temDiff = diff > 0.01
+                      return (
+                        <button key={c.id} onClick={() => setContaSelecionada(c)}
+                          className="w-full bg-gray-50 rounded-xl p-3 text-left hover:bg-gray-100 transition">
+                          <div className="flex justify-between items-center">
+                            <p className="text-sm font-medium text-gray-900 truncate flex-1">{c.description}</p>
+                            <p className="text-sm font-bold text-navy ml-2">{fmt(c.amount)}</p>
+                          </div>
+                          <div className="flex items-center justify-between mt-0.5">
+                            <p className="text-xs text-gray-400">Venc: {fmtData(c.due_date)}</p>
+                            {temDiff && (
+                              <p className="text-xs text-orange-500">Diferença: {fmt(diff)}</p>
+                            )}
+                          </div>
+                        </button>
+                      )
+                    })
+                  }
+                  {contasDisponiveis.length === 0 && (
+                    <p className="text-center text-gray-400 text-sm py-8">Nenhuma conta em aberto encontrada</p>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
