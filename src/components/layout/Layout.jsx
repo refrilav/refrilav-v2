@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, Wrench, FileText, Calendar, ClipboardList,
   LogOut, Settings, ChevronLeft, ChevronRight, Menu, X,
   TrendingUp, TrendingDown, Package, ShoppingCart, BarChart2, DollarSign,
-  ShoppingBag, Home, PieChart, ClipboardCheck
+  ShoppingBag, Home, PieChart, ClipboardCheck, GitMerge
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -32,6 +32,7 @@ const GRUPOS = [
       { path: '/receber',      label: 'A Receber',      icon: TrendingUp      },
       { path: '/pagar',        label: 'A Pagar',        icon: TrendingDown    },
       { path: '/fluxo',        label: 'Fluxo de Caixa', icon: BarChart2      },
+      { path: '/conciliacao',  label: 'Conciliação',    icon: GitMerge        },
       { path: '/dre',          label: 'DRE',            icon: PieChart        },
     ]
   },
@@ -71,18 +72,12 @@ export default function Layout() {
   const [menuAberto, setMenuAberto] = useState(false)
   const isMobile = window.innerWidth < 1024
 
-  function navegar(path) {
-    navigate(path)
-    setMenuAberto(false)
-  }
+  function navegar(path) { navigate(path); setMenuAberto(false) }
 
   if (isMobile) {
     return (
       <div className="flex flex-col min-h-screen bg-gray-50">
-        <main className="flex-1 overflow-auto pb-20">
-          <Outlet />
-        </main>
-
+        <main className="flex-1 overflow-auto pb-20"><Outlet /></main>
         <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-50"
           style={{paddingBottom: 'env(safe-area-inset-bottom)'}}>
           <div className="flex">
@@ -125,7 +120,6 @@ export default function Layout() {
                   <X size={18} className="text-gray-500" />
                 </button>
               </div>
-
               <div className="px-4 py-3 space-y-4">
                 {GRUPOS.map(grupo => (
                   <div key={grupo.label}>
@@ -147,17 +141,14 @@ export default function Layout() {
                   </div>
                 ))}
               </div>
-
               <div className="px-4 pb-2 grid grid-cols-2 gap-2 border-t border-gray-100 pt-3">
                 <button onClick={() => navegar('/configuracoes')}
                   className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-gray-50 text-gray-600">
-                  <Settings size={18} />
-                  <span className="text-sm font-medium">Configurações</span>
+                  <Settings size={18} /><span className="text-sm font-medium">Configurações</span>
                 </button>
                 <button onClick={signOut}
                   className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-red-50 text-red-600">
-                  <LogOut size={18} />
-                  <span className="text-sm font-medium">Sair</span>
+                  <LogOut size={18} /><span className="text-sm font-medium">Sair</span>
                 </button>
               </div>
             </div>
@@ -176,18 +167,14 @@ export default function Layout() {
               <span className="text-white font-bold text-sm">R</span>
             </div>
           ) : (
-            <img src="/logo.png" alt="Refrilav" className="h-8 object-contain"
-              onError={e => { e.target.style.display='none' }}/>
+            <img src="/logo.png" alt="Refrilav" className="h-8 object-contain" onError={e => { e.target.style.display='none' }}/>
           )}
         </div>
-
         <nav className="flex-1 py-3 overflow-y-auto">
           {GRUPOS.map(grupo => (
             <div key={grupo.label} className="mb-3">
               {!collapsed && (
-                <p className="text-[10px] font-semibold text-blue-300/60 uppercase tracking-widest px-4 mb-1">
-                  {grupo.label}
-                </p>
+                <p className="text-[10px] font-semibold text-blue-300/60 uppercase tracking-widest px-4 mb-1">{grupo.label}</p>
               )}
               <div className="space-y-0.5 px-2">
                 {grupo.items.map(({ path, label, icon: Icon }) => {
@@ -206,17 +193,14 @@ export default function Layout() {
             </div>
           ))}
         </nav>
-
         <div className="p-2 space-y-0.5 border-t border-white/10">
           <button onClick={() => navigate('/configuracoes')}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-blue-100 hover:bg-white/10 transition ${collapsed ? 'justify-center' : ''}`}>
-            <Settings size={17} />
-            {!collapsed && <span>Configurações</span>}
+            <Settings size={17} />{!collapsed && <span>Configurações</span>}
           </button>
           <button onClick={signOut}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-blue-100 hover:bg-white/10 transition ${collapsed ? 'justify-center' : ''}`}>
-            <LogOut size={17} />
-            {!collapsed && <span>Sair</span>}
+            <LogOut size={17} />{!collapsed && <span>Sair</span>}
           </button>
           <button onClick={() => setCollapsed(!collapsed)}
             className="w-full flex items-center justify-center px-3 py-2 rounded-lg text-blue-200 hover:bg-white/10 transition">
@@ -224,10 +208,7 @@ export default function Layout() {
           </button>
         </div>
       </aside>
-
-      <main className="flex-1 overflow-auto">
-        <Outlet />
-      </main>
+      <main className="flex-1 overflow-auto"><Outlet /></main>
     </div>
   )
 }

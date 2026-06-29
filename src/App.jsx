@@ -16,6 +16,7 @@ import Pagar from './pages/Pagar'
 import Configuracoes from './pages/Configuracoes'
 import PessoalPagar from './pages/PessoalPagar'
 import FluxoCaixa from './pages/FluxoCaixa'
+import Conciliacao from './pages/Conciliacao'
 import Estoque from './pages/Estoque'
 import Compras from './pages/Compras'
 import CompraDetalhe from './pages/CompraDetalhe'
@@ -41,13 +42,10 @@ function PrivateRoute({ children }) {
 }
 
 function AppRoutes() {
-  useEffect(() => {
-    document.title = 'Refrilav Gestão'
-  }, [])
+  useEffect(() => { document.title = 'Refrilav Gestão' }, [])
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="agenda" element={<Agenda />} />
@@ -58,6 +56,7 @@ function AppRoutes() {
         <Route path="receber" element={<Receber />} />
         <Route path="pagar" element={<Pagar />} />
         <Route path="fluxo" element={<FluxoCaixa />} />
+        <Route path="conciliacao" element={<Conciliacao />} />
         <Route path="dre" element={<DRE />} />
         <Route path="pmoc" element={<PMOC />} />
         <Route path="configuracoes" element={<Configuracoes />} />
@@ -71,7 +70,6 @@ function AppRoutes() {
         <Route path="clientes/:id" element={<ClienteDetalhe />} />
         <Route path="dashboard" element={<Dashboard />} />
       </Route>
-
       <Route path="/m/atendimento/:id" element={<PrivateRoute><AtendimentoDetalhe /></PrivateRoute>} />
       <Route path="/m/oficina/:id" element={<PrivateRoute><OSDetalhe /></PrivateRoute>} />
       <Route path="/m/orcamento/:id" element={<PrivateRoute><OrcamentoDetalhe /></PrivateRoute>} />
