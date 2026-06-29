@@ -77,6 +77,11 @@ export default function Conciliacao() {
   const [salvandoCriar, setSalvandoCriar] = useState(false)
   const [novaCategoria, setNovaCategoria] = useState('')
   const [addCategoria, setAddCategoria] = useState(false)
+  const [buscaFornecedor, setBuscaFornecedor] = useState('')
+  const [fornecedoresSugestoes, setFornecedoresSugestoes] = useState([])
+  const [addFornecedor, setAddFornecedor] = useState(false)
+  const [novoFornecedor, setNovoFornecedor] = useState({ name:'', phone:'', email:'' })
+  const [salvandoFornecedor, setSalvandoFornecedor] = useState(false)
 
   const fileRef = useRef(null)
 
@@ -160,10 +165,15 @@ export default function Conciliacao() {
     setFormCriar({
       description: transacao.party_name || transacao.description || '',
       party_name: transacao.party_name || '',
+      supplier_id: null,
       category: transacao.category || '',
       amount: transacao.amount,
       date: transacao.date,
     })
+    setBuscaFornecedor(transacao.party_name || '')
+    setFornecedoresSugestoes([])
+    setAddFornecedor(false)
+    setNovoFornecedor({ name:'', phone:'', email:'' })
   }
 
   async function confirmarCriarConta() {
@@ -189,6 +199,7 @@ export default function Conciliacao() {
         paid_at: formCriar.date,
         category: formCriar.category || null,
         supplier_name: formCriar.party_name || null,
+        supplier_id: formCriar.supplier_id || null,
       }).select().single()
       if (error) { alert('Erro: ' + error.message); setSalvandoCriar(false); return }
       await supabase.from('bank_transactions').update({ payable_id: data.id, status: 'conciliado', party_name: formCriar.party_name, category: formCriar.category }).eq('id', modalCriar.id)
@@ -196,6 +207,36 @@ export default function Conciliacao() {
     setSalvandoCriar(false)
     setModalCriar(null)
     carregar()
+  }
+
+  async function buscarFornecedor(termo) {
+    setBuscaFornecedor(termo)
+    setFormCriar(f => ({ ...f, party_name: termo, supplier_id: null }))
+    if (termo.length < 2) { setFornecedoresSugestoes([]); return }
+    const { data } = await supabase.from('suppliers')
+      .select('id, name, phone').ilike('name', `%${termo}%`).range(0, 9)
+    setFornecedoresSugestoes(data || [])
+  }
+
+  function selecionarFornecedor(f) {
+    setFormCriar(prev => ({ ...prev, party_name: f.name, supplier_id: f.id }))
+    setBuscaFornecedor(f.name)
+    setFornecedoresSugestoes([])
+  }
+
+  async function cadastrarFornecedor() {
+    if (!novoFornecedor.name.trim()) return alert('Informe o nome.')
+    setSalvandoFornecedor(true)
+    const { data, error } = await supabase.from('suppliers').insert({
+      name: novoFornecedor.name.trim(),
+      phone: novoFornecedor.phone || null,
+      email: novoFornecedor.email || null,
+    }).select().single()
+    setSalvandoFornecedor(false)
+    if (error) { alert('Erro: ' + error.message); return }
+    selecionarFornecedor(data)
+    setAddFornecedor(false)
+    setNovoFornecedor({ name:'', phone:'', email:'' })
   }
 
   async function buscarContas(transacao) {
@@ -395,12 +436,64 @@ export default function Conciliacao() {
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-500 mb-1 block">
-                  {modalCriar.type==='credit' ? 'Cliente' : 'Fornecedor'}
-                </label>
-                <input value={formCriar.party_name} onChange={e => setFormCriar(f=>({...f,party_name:e.target.value}))}
-                  placeholder={modalCriar.type==='credit' ? 'Nome do cliente' : 'Nome do fornecedor'}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-medium text-gray-500">
+                    {modalCriar.type==='credit' ? 'Cliente' : 'Fornecedor'}
+                  </label>
+                  {modalCriar.type !== 'credit' && (
+                    <button onClick={() => setAddFornecedor(!addFornecedor)}
+                      className="flex items-center gap-1 text-xs text-primary font-semibold">
+                      <Plus size={11}/> Novo fornecedor
+                    </button>
+                  )}
+                </div>
+                {addFornecedor && modalCriar.type !== 'credit' && (
+                  <div className="bg-gray-50 rounded-xl p-3 space-y-2 mb-2">
+                    <p className="text-xs font-semibold text-gray-500">Cadastrar novo fornecedor</p>
+                    <input value={novoFornecedor.name} onChange={e => setNovoFornecedor(f=>({...f,name:e.target.value}))}
+                      placeholder="Nome *" autoFocus
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white"/>
+                    <input value={novoFornecedor.phone} onChange={e => setNovoFornecedor(f=>({...f,phone:e.target.value}))}
+                      placeholder="Telefone"
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white"/>
+                    <input value={novoFornecedor.email} onChange={e => setNovoFornecedor(f=>({...f,email:e.target.value}))}
+                      placeholder="E-mail"
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white"/>
+                    <div className="flex gap-2">
+                      <button onClick={cadastrarFornecedor} disabled={salvandoFornecedor}
+                        className="flex-1 bg-primary text-white rounded-xl py-2 text-sm font-semibold disabled:opacity-60">
+                        {salvandoFornecedor ? 'Salvando...' : 'Cadastrar e Selecionar'}
+                      </button>
+                      <button onClick={() => setAddFornecedor(false)} className="px-3 bg-gray-200 text-gray-600 rounded-xl py-2 text-sm">Cancelar</button>
+                    </div>
+                  </div>
+                )}
+                {modalCriar.type !== 'credit' ? (
+                  <div className="relative">
+                    <input value={buscaFornecedor}
+                      onChange={e => buscarFornecedor(e.target.value)}
+                      placeholder="Buscar fornecedor cadastrado..."
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
+                    {fornecedoresSugestoes.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-xl mt-1 shadow-lg z-10 overflow-hidden">
+                        {fornecedoresSugestoes.map(f => (
+                          <button key={f.id} onClick={() => selecionarFornecedor(f)}
+                            className="w-full px-3 py-2.5 text-left hover:bg-gray-50 border-b border-gray-50 last:border-0">
+                            <p className="text-sm font-medium">{f.name}</p>
+                            {f.phone && <p className="text-xs text-gray-400">{f.phone}</p>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {formCriar.supplier_id && (
+                      <p className="text-xs text-green-600 mt-1">✓ {formCriar.party_name}</p>
+                    )}
+                  </div>
+                ) : (
+                  <input value={formCriar.party_name} onChange={e => setFormCriar(f=>({...f,party_name:e.target.value}))}
+                    placeholder="Nome do cliente"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
+                )}
               </div>
               <div>
                 <div className="flex items-center justify-between mb-1">
