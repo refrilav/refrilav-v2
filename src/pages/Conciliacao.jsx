@@ -75,6 +75,8 @@ export default function Conciliacao() {
   const [modalCriar, setModalCriar] = useState(null) // transacao
   const [formCriar, setFormCriar] = useState({})
   const [salvandoCriar, setSalvandoCriar] = useState(false)
+  const [novaCategoria, setNovaCategoria] = useState('')
+  const [addCategoria, setAddCategoria] = useState(false)
 
   const fileRef = useRef(null)
 
@@ -401,7 +403,39 @@ export default function Conciliacao() {
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-500 mb-1 block">Categoria</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-medium text-gray-500">Categoria</label>
+                  <button onClick={() => setAddCategoria(!addCategoria)}
+                    className="flex items-center gap-1 text-xs text-primary font-semibold">
+                    <Plus size={11}/> Nova categoria
+                  </button>
+                </div>
+                {addCategoria && (
+                  <div className="flex gap-2 mb-2">
+                    <input value={novaCategoria} onChange={e => setNovaCategoria(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && novaCategoria.trim()) {
+                          const nova = novaCategoria.trim()
+                          setCatsPagar(prev => [...new Set([...prev, nova])])
+                          setFormCriar(f => ({...f, category: nova}))
+                          setNovaCategoria('')
+                          setAddCategoria(false)
+                        }
+                      }}
+                      placeholder="Ex: Manutenção veículo"
+                      className="flex-1 border border-primary rounded-xl px-3 py-2 text-sm focus:outline-none" autoFocus/>
+                    <button onClick={() => {
+                      const nova = novaCategoria.trim()
+                      if (!nova) return
+                      setCatsPagar(prev => [...new Set([...prev, nova])])
+                      setFormCriar(f => ({...f, category: nova}))
+                      setNovaCategoria('')
+                      setAddCategoria(false)
+                    }} className="bg-primary text-white px-3 rounded-xl text-sm font-semibold">OK</button>
+                    <button onClick={() => { setAddCategoria(false); setNovaCategoria('') }}
+                      className="bg-gray-100 text-gray-500 px-3 rounded-xl text-sm">✕</button>
+                  </div>
+                )}
                 <div className="relative">
                   <select value={formCriar.category} onChange={e => setFormCriar(f=>({...f,category:e.target.value}))}
                     className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary appearance-none bg-white">
