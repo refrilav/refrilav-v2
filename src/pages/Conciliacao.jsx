@@ -77,6 +77,8 @@ export default function Conciliacao() {
   const [filtro, setFiltro] = useState('pendente')
   const [busca, setBusca] = useState('')
   const [editando, setEditando] = useState(null)
+  const [categoriasPagar, setCategoriasPagar] = useState([])
+  const [categoriasReceber] = useState(['Serviços','Vendas','Outros recebimentos'])
   const [formEdit, setFormEdit] = useState({})
   const [salvandoEdit, setSalvandoEdit] = useState(false)
   const [modalVincular, setModalVincular] = useState(null)
@@ -85,6 +87,15 @@ export default function Conciliacao() {
   const fileRef = useRef(null)
 
   useEffect(() => { carregar() }, [filtro])
+  useEffect(() => {
+    async function carregarCategorias() {
+      const { data } = await supabase.from('payables').select('category').not('category', 'is', null)
+      const cats = [...new Set((data||[]).map(p => p.category).filter(Boolean))]
+      if (cats.length > 0) setCategoriasPagar(cats)
+      else setCategoriasPagar(['Fornecedores','Aluguel','Salários','Impostos','Compras','Combustível','Alimentação','Telefone','Internet','Outros'])
+    }
+    carregarCategorias()
+  }, [])
 
   async function carregar() {
     setLoading(true)
@@ -157,34 +168,29 @@ export default function Conciliacao() {
   }
 
   async function criarContaAPartir(transacao) {
-    // Cria uma conta a receber ou pagar nova a partir da transação bancária
     if (transacao.type === 'credit') {
-      const { data } = await supabase.from('receivables').insert({
-        description: transacao.party_name || transacao.description,
+      const { data, error } = await supabase.from('receivables').insert({
+        description: transacao.party_name || transacao.description || 'Extrato bancário',
         amount: transacao.amount,
         due_date: transacao.date,
         status: 'recebido',
         received_at: transacao.date,
         received_amount: transacao.amount,
-        payment_method: 'Extrato bancário',
       }).select().single()
-      if (data) {
-        await supabase.from('bank_transactions').update({ receivable_id: data.id, status: 'conciliado' }).eq('id', transacao.id)
-      }
+      if (error) { alert('Erro ao criar conta a receber: ' + error.message); return }
+      await supabase.from('bank_transactions').update({ receivable_id: data.id, status: 'conciliado' }).eq('id', transacao.id)
     } else {
-      const { data } = await supabase.from('payables').insert({
-        description: transacao.party_name || transacao.description,
+      const { data, error } = await supabase.from('payables').insert({
+        description: transacao.party_name || transacao.description || 'Extrato bancário',
         amount: transacao.amount,
         due_date: transacao.date,
         status: 'pago',
         paid_at: transacao.date,
         category: transacao.category || null,
         supplier_name: transacao.party_name || null,
-        payment_method: 'Extrato bancário',
       }).select().single()
-      if (data) {
-        await supabase.from('bank_transactions').update({ payable_id: data.id, status: 'conciliado' }).eq('id', transacao.id)
-      }
+      if (error) { alert('Erro ao criar conta a pagar: ' + error.message); return }
+      await supabase.from('bank_transactions').update({ payable_id: data.id, status: 'conciliado' }).eq('id', transacao.id)
     }
     carregar()
   }
@@ -291,7 +297,7 @@ export default function Conciliacao() {
                             <select value={formEdit.category} onChange={e => setFormEdit(f=>({...f,category:e.target.value}))}
                               className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary appearance-none bg-white">
                               <option value="">Categoria</option>
-                              {(isCredit ? CATEGORIAS_RECEITA : CATEGORIAS_DESPESA).map(c => <option key={c}>{c}</option>)}
+                              {(isCredit ? categoriasReceber : categoriasPagar).map(cat => <option key={cat}>{cat}</option>)}
                             </select>
                             <ChevronDown size={14} className="absolute right-3 top-2.5 text-gray-400 pointer-events-none"/>
                           </div>
