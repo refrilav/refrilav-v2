@@ -72,6 +72,7 @@ export default function Conciliacao() {
   const [buscaConta, setBuscaConta] = useState('')
   const [contaSelecionada, setContaSelecionada] = useState(null)
   const [taxaVincular, setTaxaVincular] = useState('')
+  const [tipoDesconto, setTipoDesconto] = useState('taxa_cartao')
 
   // Modal criar conta
   const [modalCriar, setModalCriar] = useState(null) // transacao
@@ -148,7 +149,7 @@ export default function Conciliacao() {
     carregar()
   }
 
-  async function vincularConta(transacao, conta, tipo, taxa = 0) {
+  async function vincularConta(transacao, conta, tipo, taxa = 0, tipoDesc = 'taxa_cartao') {
     const update = tipo === 'receivable'
       ? { receivable_id: conta.id, status: 'conciliado', party_name: conta.description }
       : { payable_id: conta.id, status: 'conciliado', party_name: conta.description }
@@ -159,17 +160,20 @@ export default function Conciliacao() {
         received_at: transacao.date,
         received_amount: transacao.amount,
         discount: taxa > 0 ? taxa : null,
+        discount_type: taxa > 0 ? tipoDesconto : null,
       }).eq('id', conta.id)
     } else {
       await supabase.from('payables').update({
         status: 'pago',
         paid_at: transacao.date,
         discount: taxa > 0 ? taxa : null,
+        discount_type: taxa > 0 ? tipoDesconto : null,
       }).eq('id', conta.id)
     }
     setModalVincular(null)
     setContaSelecionada(null)
     setTaxaVincular('')
+    setTipoDesconto('taxa_cartao')
     carregar()
   }
 
@@ -607,16 +611,35 @@ export default function Conciliacao() {
                 </div>
 
                 {Number(contaSelecionada.amount) !== Number(modalVincular.amount) && (
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 mb-1 block">
-                      Taxa / Desconto (diferença de {fmt(Math.abs(contaSelecionada.amount - modalVincular.amount))})
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-gray-500 block">
+                      Tipo da diferença ({fmt(Math.abs(contaSelecionada.amount - modalVincular.amount))})
                     </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { value: 'taxa_cartao', label: '💳 Taxa de cartão' },
+                        { value: 'taxa_bancaria', label: '🏦 Taxa bancária' },
+                        { value: 'desconto_dado', label: '🎁 Desconto dado' },
+                        { value: 'outros', label: '📋 Outros' },
+                      ].map(op => (
+                        <button key={op.value} onClick={() => setTipoDesconto(op.value)}
+                          className={`py-2 px-3 rounded-xl text-xs font-medium border text-left transition ${
+                            tipoDesconto === op.value ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-200'
+                          }`}>
+                          {op.label}
+                        </button>
+                      ))}
+                    </div>
                     <input type="number" value={taxaVincular}
                       onChange={e => setTaxaVincular(e.target.value)}
-                      placeholder="Ex: 9.60 (taxa do cartão)"
+                      placeholder={`Valor (sugerido: ${fmt(Math.abs(contaSelecionada.amount - modalVincular.amount))})`}
                       step="0.01"
                       className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
-                    <p className="text-xs text-gray-400 mt-1">Será registrado como desconto/taxa na conta</p>
+                    <p className="text-xs text-gray-400">Será registrado na conta como "{
+                      tipoDesconto === 'taxa_cartao' ? 'Taxa de cartão' :
+                      tipoDesconto === 'taxa_bancaria' ? 'Taxa bancária' :
+                      tipoDesconto === 'desconto_dado' ? 'Desconto dado' : 'Outros'
+                    }"</p>
                   </div>
                 )}
 
@@ -630,7 +653,8 @@ export default function Conciliacao() {
                       modalVincular,
                       contaSelecionada,
                       modalVincular.type==='credit' ? 'receivable' : 'payable',
-                      parseFloat(taxaVincular) || 0
+                      parseFloat(taxaVincular) || 0,
+                      tipoDesconto
                     )}
                     className="flex-1 bg-primary text-white rounded-xl py-3 text-sm font-semibold">
                     Confirmar Conciliação
