@@ -88,7 +88,7 @@ export default function Conciliacao() {
 
   async function carregar() {
     setLoading(true)
-    let q = supabase.from('bank_transactions').select('*, receivables(description, amount), payables(description, amount)')
+    let q = supabase.from('bank_transactions').select('*')
       .order('date', { ascending: false }).range(0, 9999)
     if (filtro && filtro !== 'todos') q = q.eq('status', filtro)
     const { data } = await q
@@ -270,7 +270,7 @@ export default function Conciliacao() {
           const isCredit = t.type === 'credit'
           const isConciliado = t.status === 'conciliado'
           const isIgnorado = t.status === 'ignorado'
-          const contaVinculada = t.receivables || t.payables
+          const contaVinculada = null // join removido
 
           return (
             <div key={t.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
