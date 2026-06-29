@@ -1,9 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
-import { Upload, Check, X, Search, Link, Plus, ChevronDown, AlertCircle, CheckCircle2, MinusCircle } from 'lucide-react'
-
-const CATEGORIAS_RECEITA = ['Serviços','Vendas','Outros recebimentos']
-const CATEGORIAS_DESPESA = ['Fornecedores','Aluguel','Salários','Impostos','Compras','Combustível','Alimentação','Telefone','Internet','Outros']
+import { Upload, X, Search, Link, Plus, ChevronDown, CheckCircle2, Save } from 'lucide-react'
 
 function fmt(v) {
   if (!v && v !== 0) return 'R$ 0,00'
@@ -15,60 +12,43 @@ function fmtData(s) {
   return `${d}/${m}/${y}`
 }
 
-// Parser OFX
 function parseOFX(text) {
   const transacoes = []
-  // Suporte a OFX antigo (SGML) e novo (XML)
   const stmtTrnRegex = /<STMTTRN>([\s\S]*?)<\/STMTTRN>/gi
   let match
   while ((match = stmtTrnRegex.exec(text)) !== null) {
     const bloco = match[1]
-    const get = (tag) => {
-      const m = bloco.match(new RegExp(`<${tag}>([^<\r\n]+)`, 'i'))
-      return m ? m[1].trim() : ''
-    }
-    const trntype = get('TRNTYPE')
+    const get = (tag) => { const m = bloco.match(new RegExp(`<${tag}>([^<\r\n]+)`, 'i')); return m ? m[1].trim() : '' }
     const dtposted = get('DTPOSTED')
     const trnamt = parseFloat(get('TRNAMT').replace(',', '.')) || 0
     const fitid = get('FITID')
     const name = get('NAME')
     const memo = get('MEMO')
-
-    // Converte data YYYYMMDD para YYYY-MM-DD
     let date = ''
-    if (dtposted.length >= 8) {
-      date = `${dtposted.substring(0,4)}-${dtposted.substring(4,6)}-${dtposted.substring(6,8)}`
-    }
-
+    if (dtposted.length >= 8) date = `${dtposted.substring(0,4)}-${dtposted.substring(4,6)}-${dtposted.substring(6,8)}`
     const type = trnamt >= 0 ? 'credit' : 'debit'
-
     transacoes.push({ date, amount: Math.abs(trnamt), type, description: name || memo, memo, fitid, party_name: name || '', category: '', status: 'pendente' })
   }
-
-  // Fallback para formato SGML sem tags de fechamento
   if (transacoes.length === 0) {
     const blocos = text.split('<STMTTRN>').slice(1)
     blocos.forEach(bloco => {
-      const get = (tag) => {
-        const m = bloco.match(new RegExp(`<${tag}>\\s*([^\r\n<]+)`, 'i'))
-        return m ? m[1].trim() : ''
-      }
+      const get = (tag) => { const m = bloco.match(new RegExp(`<${tag}>\\s*([^\r\n<]+)`, 'i')); return m ? m[1].trim() : '' }
       const dtposted = get('DTPOSTED')
       const trnamt = parseFloat(get('TRNAMT').replace(',', '.')) || 0
       const fitid = get('FITID')
       const name = get('NAME')
       const memo = get('MEMO')
       let date = ''
-      if (dtposted.length >= 8) {
-        date = `${dtposted.substring(0,4)}-${dtposted.substring(4,6)}-${dtposted.substring(6,8)}`
-      }
+      if (dtposted.length >= 8) date = `${dtposted.substring(0,4)}-${dtposted.substring(4,6)}-${dtposted.substring(6,8)}`
       const type = trnamt >= 0 ? 'credit' : 'debit'
       if (fitid) transacoes.push({ date, amount: Math.abs(trnamt), type, description: name || memo, memo, fitid, party_name: name || '', category: '', status: 'pendente' })
     })
   }
-
   return transacoes
 }
+
+const CATS_RECEITA_PADRAO = ['Serviços','Vendas','Outros recebimentos']
+const CATS_DESPESA_PADRAO = ['Fornecedores','Aluguel','Salários','Impostos','Compras','Combustível','Alimentação','Telefone','Internet','Outros']
 
 export default function Conciliacao() {
   const [transacoes, setTransacoes] = useState([])
@@ -76,23 +56,37 @@ export default function Conciliacao() {
   const [importando, setImportando] = useState(false)
   const [filtro, setFiltro] = useState('pendente')
   const [busca, setBusca] = useState('')
+
+  // Editar inline
   const [editando, setEditando] = useState(null)
-  const [categoriasPagar, setCategoriasPagar] = useState([])
-  const [categoriasReceber] = useState(['Serviços','Vendas','Outros recebimentos'])
   const [formEdit, setFormEdit] = useState({})
   const [salvandoEdit, setSalvandoEdit] = useState(false)
+
+  // Categorias dinâmicas
+  const [catsPagar, setCatsPagar] = useState(CATS_DESPESA_PADRAO)
+  const [catsReceber] = useState(CATS_RECEITA_PADRAO)
+
+  // Modal vincular
   const [modalVincular, setModalVincular] = useState(null)
   const [contasDisponiveis, setContasDisponiveis] = useState([])
   const [buscaConta, setBuscaConta] = useState('')
+
+  // Modal criar conta
+  const [modalCriar, setModalCriar] = useState(null) // transacao
+  const [formCriar, setFormCriar] = useState({})
+  const [salvandoCriar, setSalvandoCriar] = useState(false)
+
   const fileRef = useRef(null)
 
   useEffect(() => { carregar() }, [filtro])
+
   useEffect(() => {
     async function carregarCategorias() {
       const { data } = await supabase.from('payables').select('category').not('category', 'is', null)
       const cats = [...new Set((data||[]).map(p => p.category).filter(Boolean))]
-      if (cats.length > 0) setCategoriasPagar(cats)
-      else setCategoriasPagar(['Fornecedores','Aluguel','Salários','Impostos','Compras','Combustível','Alimentação','Telefone','Internet','Outros'])
+      // Mescla as categorias do banco com as padrão
+      const merged = [...new Set([...CATS_DESPESA_PADRAO, ...cats])]
+      setCatsPagar(merged)
     }
     carregarCategorias()
   }, [])
@@ -113,21 +107,16 @@ export default function Conciliacao() {
     setImportando(true)
     const text = await file.text()
     const parsed = parseOFX(text)
-    if (parsed.length === 0) { alert('Nenhuma transação encontrada no arquivo. Verifique se é um arquivo OFX válido.'); setImportando(false); return }
-
-    // Verifica duplicatas pelo fitid
+    if (parsed.length === 0) { alert('Nenhuma transação encontrada. Verifique se é um arquivo OFX válido.'); setImportando(false); return }
     const fitids = parsed.map(t => t.fitid).filter(Boolean)
     const { data: existentes } = await supabase.from('bank_transactions').select('fitid').in('fitid', fitids)
     const fitidsExistentes = new Set((existentes || []).map(e => e.fitid))
     const novas = parsed.filter(t => !fitidsExistentes.has(t.fitid))
-
-    if (novas.length === 0) { alert('Todas as transações deste extrato já foram importadas.'); setImportando(false); return }
-
+    if (novas.length === 0) { alert('Todas as transações já foram importadas.'); setImportando(false); return }
     const { error } = await supabase.from('bank_transactions').insert(novas)
     if (error) { alert('Erro ao importar: ' + error.message); setImportando(false); return }
-
     setImportando(false)
-    alert(`${novas.length} transação(ões) importada(s) com sucesso!${fitidsExistentes.size > 0 ? ` (${fitidsExistentes.size} duplicata(s) ignorada(s))` : ''}`)
+    alert(`${novas.length} transação(ões) importada(s)!${fitidsExistentes.size > 0 ? ` (${fitidsExistentes.size} duplicata(s) ignorada(s))` : ''}`)
     setFiltro('pendente')
     carregar()
     e.target.value = ''
@@ -151,13 +140,10 @@ export default function Conciliacao() {
   }
 
   async function vincularConta(transacao, conta, tipo) {
-    // Vincula a transação a uma conta a receber ou pagar
     const update = tipo === 'receivable'
       ? { receivable_id: conta.id, status: 'conciliado', party_name: conta.description }
       : { payable_id: conta.id, status: 'conciliado', party_name: conta.description }
     await supabase.from('bank_transactions').update(update).eq('id', transacao.id)
-
-    // Marca a conta como paga/recebida
     if (tipo === 'receivable') {
       await supabase.from('receivables').update({ status: 'recebido', received_at: transacao.date, received_amount: transacao.amount }).eq('id', conta.id)
     } else {
@@ -167,31 +153,46 @@ export default function Conciliacao() {
     carregar()
   }
 
-  async function criarContaAPartir(transacao) {
-    if (transacao.type === 'credit') {
+  function abrirModalCriar(transacao) {
+    setModalCriar(transacao)
+    setFormCriar({
+      description: transacao.party_name || transacao.description || '',
+      party_name: transacao.party_name || '',
+      category: transacao.category || '',
+      amount: transacao.amount,
+      date: transacao.date,
+    })
+  }
+
+  async function confirmarCriarConta() {
+    if (!formCriar.description) return alert('Informe a descrição.')
+    setSalvandoCriar(true)
+    if (modalCriar.type === 'credit') {
       const { data, error } = await supabase.from('receivables').insert({
-        description: transacao.party_name || transacao.description || 'Extrato bancário',
-        amount: transacao.amount,
-        due_date: transacao.date,
+        description: formCriar.description,
+        amount: formCriar.amount,
+        due_date: formCriar.date,
         status: 'recebido',
-        received_at: transacao.date,
-        received_amount: transacao.amount,
+        received_at: formCriar.date,
+        received_amount: formCriar.amount,
       }).select().single()
-      if (error) { alert('Erro ao criar conta a receber: ' + error.message); return }
-      await supabase.from('bank_transactions').update({ receivable_id: data.id, status: 'conciliado' }).eq('id', transacao.id)
+      if (error) { alert('Erro: ' + error.message); setSalvandoCriar(false); return }
+      await supabase.from('bank_transactions').update({ receivable_id: data.id, status: 'conciliado', party_name: formCriar.party_name, category: formCriar.category }).eq('id', modalCriar.id)
     } else {
       const { data, error } = await supabase.from('payables').insert({
-        description: transacao.party_name || transacao.description || 'Extrato bancário',
-        amount: transacao.amount,
-        due_date: transacao.date,
+        description: formCriar.description,
+        amount: formCriar.amount,
+        due_date: formCriar.date,
         status: 'pago',
-        paid_at: transacao.date,
-        category: transacao.category || null,
-        supplier_name: transacao.party_name || null,
+        paid_at: formCriar.date,
+        category: formCriar.category || null,
+        supplier_name: formCriar.party_name || null,
       }).select().single()
-      if (error) { alert('Erro ao criar conta a pagar: ' + error.message); return }
-      await supabase.from('bank_transactions').update({ payable_id: data.id, status: 'conciliado' }).eq('id', transacao.id)
+      if (error) { alert('Erro: ' + error.message); setSalvandoCriar(false); return }
+      await supabase.from('bank_transactions').update({ payable_id: data.id, status: 'conciliado', party_name: formCriar.party_name, category: formCriar.category }).eq('id', modalCriar.id)
     }
+    setSalvandoCriar(false)
+    setModalCriar(null)
     carregar()
   }
 
@@ -201,7 +202,7 @@ export default function Conciliacao() {
     const tipo = transacao.type === 'credit' ? 'receivables' : 'payables'
     const { data } = await supabase.from(tipo)
       .select('id, description, amount, due_date')
-      .eq('status', transacao.type === 'credit' ? 'em_aberto' : 'em_aberto')
+      .eq('status', 'em_aberto')
       .order('due_date', { ascending: false })
       .range(0, 99)
     setContasDisponiveis(data || [])
@@ -225,20 +226,17 @@ export default function Conciliacao() {
             <h1 className="text-lg font-bold text-navy">Conciliação Bancária</h1>
             {pendentes > 0 && <p className="text-xs text-orange-500">{pendentes} transação(ões) pendente(s)</p>}
           </div>
-          <button onClick={() => fileRef.current?.click()}
-            disabled={importando}
+          <button onClick={() => fileRef.current?.click()} disabled={importando}
             className="flex items-center gap-1.5 bg-primary text-white px-3 py-2 rounded-xl text-sm font-semibold disabled:opacity-60">
             <Upload size={15}/>{importando ? 'Importando...' : 'Importar OFX'}
           </button>
           <input ref={fileRef} type="file" accept=".ofx,.OFX" className="hidden" onChange={importarOFX}/>
         </div>
-
         <div className="relative mb-3">
           <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar transações..."
             className="w-full bg-gray-100 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none"/>
           <Search size={15} className="absolute left-3 top-3 text-gray-400"/>
         </div>
-
         <div className="flex gap-2 overflow-x-auto pb-1">
           {[{v:'pendente',l:'Pendentes'},{v:'conciliado',l:'Conciliados'},{v:'ignorado',l:'Ignorados'},{v:'todos',l:'Todos'}].map(f => (
             <button key={f.v} onClick={() => setFiltro(f.v)}
@@ -249,7 +247,6 @@ export default function Conciliacao() {
         </div>
       </div>
 
-      {/* Resumo */}
       {filtradas.length > 0 && (
         <div className="px-4 pt-3 grid grid-cols-2 gap-2">
           <div className="bg-green-50 rounded-2xl p-3 text-center">
@@ -276,7 +273,6 @@ export default function Conciliacao() {
           const isCredit = t.type === 'credit'
           const isConciliado = t.status === 'conciliado'
           const isIgnorado = t.status === 'ignorado'
-          const contaVinculada = null // join removido
 
           return (
             <div key={t.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -297,7 +293,7 @@ export default function Conciliacao() {
                             <select value={formEdit.category} onChange={e => setFormEdit(f=>({...f,category:e.target.value}))}
                               className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary appearance-none bg-white">
                               <option value="">Categoria</option>
-                              {(isCredit ? categoriasReceber : categoriasPagar).map(cat => <option key={cat}>{cat}</option>)}
+                              {(isCredit ? catsReceber : catsPagar).map(cat => <option key={cat}>{cat}</option>)}
                             </select>
                             <ChevronDown size={14} className="absolute right-3 top-2.5 text-gray-400 pointer-events-none"/>
                           </div>
@@ -321,11 +317,6 @@ export default function Conciliacao() {
                             {isConciliado && <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full flex items-center gap-0.5"><CheckCircle2 size={10}/>Conciliado</span>}
                             {isIgnorado && <span className="text-xs bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">Ignorado</span>}
                           </div>
-                          {contaVinculada && (
-                            <p className="text-xs text-blue-600 mt-0.5 flex items-center gap-1">
-                              <Link size={10}/>{contaVinculada.description}
-                            </p>
-                          )}
                         </>
                       )}
                     </div>
@@ -338,7 +329,6 @@ export default function Conciliacao() {
                 </div>
               </div>
 
-              {/* Ações */}
               {editando !== t.id && (
                 <div className="flex border-t border-gray-50 divide-x divide-gray-50">
                   <button onClick={() => { setEditando(t.id); setFormEdit({ party_name: t.party_name||'', description: t.description||'', category: t.category||'' }) }}
@@ -351,7 +341,7 @@ export default function Conciliacao() {
                         className="flex-1 py-2.5 text-xs font-medium text-blue-600 hover:bg-blue-50 flex items-center justify-center gap-1">
                         <Link size={11}/> Vincular
                       </button>
-                      <button onClick={() => criarContaAPartir(t)}
+                      <button onClick={() => abrirModalCriar(t)}
                         className="flex-1 py-2.5 text-xs font-medium text-navy hover:bg-navy/5 flex items-center justify-center gap-1">
                         <Plus size={11}/> Criar conta
                       </button>
@@ -379,6 +369,64 @@ export default function Conciliacao() {
           )
         })}
       </div>
+
+      {/* Modal criar conta */}
+      {modalCriar && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
+          <div className="bg-white w-full rounded-t-3xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100 flex-shrink-0">
+              <div>
+                <h3 className="text-base font-bold text-navy">
+                  {modalCriar.type==='credit' ? 'Criar Conta a Receber' : 'Criar Conta a Pagar'}
+                </h3>
+                <p className="text-xs text-gray-400">
+                  {modalCriar.type==='credit'?'+':'-'}{fmt(modalCriar.amount)} · {fmtData(modalCriar.date)}
+                </p>
+              </div>
+              <button onClick={() => setModalCriar(null)}><X size={20} className="text-gray-400"/></button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Descrição *</label>
+                <input value={formCriar.description} onChange={e => setFormCriar(f=>({...f,description:e.target.value}))}
+                  placeholder="Ex: Pagamento de serviço"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">
+                  {modalCriar.type==='credit' ? 'Cliente' : 'Fornecedor'}
+                </label>
+                <input value={formCriar.party_name} onChange={e => setFormCriar(f=>({...f,party_name:e.target.value}))}
+                  placeholder={modalCriar.type==='credit' ? 'Nome do cliente' : 'Nome do fornecedor'}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"/>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Categoria</label>
+                <div className="relative">
+                  <select value={formCriar.category} onChange={e => setFormCriar(f=>({...f,category:e.target.value}))}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary appearance-none bg-white">
+                    <option value="">Selecione...</option>
+                    {(modalCriar.type==='credit' ? catsReceber : catsPagar).map(cat => <option key={cat}>{cat}</option>)}
+                  </select>
+                  <ChevronDown size={14} className="absolute right-3 top-3 text-gray-400 pointer-events-none"/>
+                </div>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-3 flex justify-between">
+                <span className="text-sm text-gray-600">Valor</span>
+                <span className={`text-sm font-bold ${modalCriar.type==='credit'?'text-green-600':'text-red-500'}`}>
+                  {modalCriar.type==='credit'?'+':'-'}{fmt(formCriar.amount)}
+                </span>
+              </div>
+            </div>
+            <div className="px-5 py-4 border-t border-gray-100 flex-shrink-0" style={{paddingBottom:'max(16px,env(safe-area-inset-bottom))'}}>
+              <button onClick={confirmarCriarConta} disabled={salvandoCriar}
+                className="w-full bg-primary text-white rounded-2xl py-4 font-bold disabled:opacity-60 flex items-center justify-center gap-2">
+                <Save size={18}/>{salvandoCriar ? 'Salvando...' : 'Criar e Conciliar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal vincular */}
       {modalVincular && (
