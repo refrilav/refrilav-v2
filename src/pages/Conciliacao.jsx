@@ -326,11 +326,11 @@ export default function Conciliacao() {
                     <div className="flex-1 min-w-0">
                       {editando === t.id ? (
                         <div className="space-y-2">
+                          <input value={formEdit.description} onChange={e => setFormEdit(f=>({...f,description:e.target.value}))}
+                            placeholder="Descrição (campo principal)"
+                            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary" autoFocus/>
                           <input value={formEdit.party_name} onChange={e => setFormEdit(f=>({...f,party_name:e.target.value}))}
                             placeholder="Cliente / Fornecedor"
-                            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary"/>
-                          <input value={formEdit.description} onChange={e => setFormEdit(f=>({...f,description:e.target.value}))}
-                            placeholder="Descrição"
                             className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary"/>
                           <div className="relative">
                             <select value={formEdit.category} onChange={e => setFormEdit(f=>({...f,category:e.target.value}))}
@@ -350,9 +350,9 @@ export default function Conciliacao() {
                         </div>
                       ) : (
                         <>
-                          <p className="text-sm font-semibold text-gray-900 truncate">{t.party_name || t.description || '—'}</p>
-                          {t.party_name && t.description && t.party_name !== t.description && (
-                            <p className="text-xs text-gray-400 truncate">{t.description}</p>
+                          <p className="text-sm font-semibold text-gray-900 truncate">{t.description || t.party_name || '—'}</p>
+                          {t.party_name && t.party_name !== t.description && (
+                            <p className="text-xs text-gray-400 truncate">{t.party_name}</p>
                           )}
                           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                             <span className="text-xs text-gray-400">{fmtData(t.date)}</span>
@@ -374,7 +374,7 @@ export default function Conciliacao() {
 
               {editando !== t.id && (
                 <div className="flex border-t border-gray-50 divide-x divide-gray-50">
-                  <button onClick={() => { setEditando(t.id); setFormEdit({ party_name: t.party_name||'', description: t.description||'', category: t.category||'' }) }}
+                  <button onClick={() => { setEditando(t.id); setFormEdit({ description: t.description||'', party_name: t.party_name||'', category: t.category||'' }) }}
                     className="flex-1 py-2.5 text-xs font-medium text-gray-500 hover:bg-gray-50">
                     Editar
                   </button>
