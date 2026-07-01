@@ -153,22 +153,23 @@ export default function Conciliacao() {
     const update = tipo === 'receivable'
       ? { receivable_id: conta.id, status: 'conciliado', party_name: conta.description }
       : { payable_id: conta.id, status: 'conciliado', party_name: conta.description }
-    await supabase.from('bank_transactions').update(update).eq('id', transacao.id)
+    const { error: errBank } = await supabase.from('bank_transactions').update(update).eq('id', transacao.id)
+    if (errBank) { alert('Erro ao atualizar transação: ' + errBank.message); return }
     if (tipo === 'receivable') {
-      await supabase.from('receivables').update({
+      const { error } = await supabase.from('receivables').update({
         status: 'recebido',
         received_at: transacao.date,
         received_amount: transacao.amount,
         discount: taxa > 0 ? taxa : null,
-        discount_type: taxa > 0 ? tipoDesconto : null,
       }).eq('id', conta.id)
+      if (error) alert('Atenção: transação conciliada mas erro ao baixar conta a receber: ' + error.message)
     } else {
-      await supabase.from('payables').update({
+      const { error } = await supabase.from('payables').update({
         status: 'pago',
         paid_at: transacao.date,
         discount: taxa > 0 ? taxa : null,
-        discount_type: taxa > 0 ? tipoDesconto : null,
       }).eq('id', conta.id)
+      if (error) alert('Atenção: transação conciliada mas erro ao baixar conta a pagar: ' + error.message)
     }
     setModalVincular(null)
     setContaSelecionada(null)
