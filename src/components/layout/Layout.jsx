@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, Wrench, FileText, Calendar, ClipboardList,
   LogOut, Settings, ChevronLeft, ChevronRight, Menu, X,
   TrendingUp, TrendingDown, Package, ShoppingCart, BarChart2, DollarSign,
-  ShoppingBag, Home, PieChart, ClipboardCheck, GitMerge, Truck
+  ShoppingBag, Home, PieChart, ClipboardCheck, GitMerge, Truck, FileBarChart
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -34,6 +34,7 @@ const GRUPOS = [
       { path: '/pagar',        label: 'A Pagar',        icon: TrendingDown    },
       { path: '/fluxo',        label: 'Fluxo de Caixa', icon: BarChart2      },
       { path: '/conciliacao',  label: 'Conciliação',    icon: GitMerge        },
+      { path: '/relatorios',   label: 'Relatórios',     icon: FileBarChart    },
       { path: '/dre',          label: 'DRE',            icon: PieChart        },
     ]
   },

@@ -18,6 +18,7 @@ import PessoalPagar from './pages/PessoalPagar'
 import FluxoCaixa from './pages/FluxoCaixa'
 import Conciliacao from './pages/Conciliacao'
 import Fornecedores from './pages/Fornecedores'
+import Relatorios from './pages/Relatorios'
 import Estoque from './pages/Estoque'
 import Compras from './pages/Compras'
 import CompraDetalhe from './pages/CompraDetalhe'
@@ -58,6 +59,7 @@ function AppRoutes() {
         <Route path="pagar" element={<Pagar />} />
         <Route path="fluxo" element={<FluxoCaixa />} />
         <Route path="conciliacao" element={<Conciliacao />} />
+        <Route path="relatorios" element={<Relatorios />} />
         <Route path="dre" element={<DRE />} />
         <Route path="pmoc" element={<PMOC />} />
         <Route path="configuracoes" element={<Configuracoes />} />
